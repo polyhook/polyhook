@@ -12,6 +12,7 @@
 #   Rust        : types are hand-maintained in core/src/types.rs
 #                 (marked "generated from schema.json"); build.rs triggers revalidation
 #   wasm-pack   : cargo install wasm-pack
+#   cspell      : npm install -g cspell
 
 SCHEMA        := schema.json
 TS_OUT        := packages/sdk-ts/src/generated/types.ts
@@ -21,7 +22,7 @@ DOTNET_OUT    := packages/sdk-dotnet/GeneratedTypes.cs
 WASM_OUT      := polyhook.wasm
 
 .PHONY: all schema schema/rust schema/ts schema/go schema/dotnet schema/python \
-        wasm test help
+        wasm test spell install-hooks help
 
 # ── Default ──────────────────────────────────────────────────────────────────
 all: schema
@@ -145,6 +146,17 @@ test:
 	@echo "── Python ──────────────────────────────────────────────"
 	python -m pytest packages/sdk-python
 	@echo "All tests passed."
+
+# ── spell ─────────────────────────────────────────────────────────────────────
+## spell: Run cspell spell check across the repository
+spell:
+	cspell "**" --no-progress
+
+# ── install-hooks ─────────────────────────────────────────────────────────────
+## install-hooks: Configure git to use the committed githooks/ directory
+install-hooks:
+	git config core.hooksPath githooks
+	@echo "Git hooks installed from githooks/."
 
 # ── help ──────────────────────────────────────────────────────────────────────
 ## help: Show this help message

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v cspell &>/dev/null; then
+  echo "pre-push: cspell not found — install with: npm install -g cspell" >&2
+  exit 1
+fi
+
+echo "Running cspell..."
+if ! cspell "**" --no-progress 2>&1; then
+  echo "" >&2
+  echo "pre-push: spell check failed. Fix errors above or add words to .cspell.json." >&2
+  exit 1
+fi

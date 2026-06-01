@@ -12,6 +12,9 @@ cargo install wasm-pack
 
 # Node (for TypeScript SDK)
 npm install
+
+# Git hooks (spell check on push)
+make install-hooks
 ```
 
 ## Project Structure
