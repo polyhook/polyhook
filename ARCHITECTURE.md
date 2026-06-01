@@ -26,10 +26,10 @@ No logic is re-implemented per language. All SDKs call the same WASM binary, so 
 ```
 polyhook/
 ├── crates/
-│   ├── polyhook-core/     # Rust: detection, normalization, serde — compiled to WASM + native
-│   └── polyhook/          # Rust SDK (native, no WASM overhead)
-│       └── examples/
+│   └── polyhook-core/     # Rust: detection, normalization, serde — compiled to WASM + native
 ├── packages/
+│   ├── sdk-rust/          # Rust SDK (native, links polyhook-core directly)
+│   │   └── examples/
 │   ├── sdk-ts/            # TypeScript bindings (wasm-bindgen)
 │   │   └── examples/
 │   ├── sdk-go/            # Go bindings (Wazero)
@@ -53,7 +53,7 @@ All SDK types (`HookEvent`, `HookResponse`, and related enums) are auto-generate
 schema.json
     │
     ├── crates/polyhook-core/ → types.rs   (typify)  ← used by WASM + native core
-    ├── crates/polyhook/      → types.rs   (typify)  ← Rust SDK
+    ├── packages/sdk-rust/    → types.rs   (typify)  ← Rust SDK
     ├── sdk-ts/        → HookEvent.ts, HookResponse.ts   (json-schema-to-typescript)
     ├── sdk-go/        → hook_event.go, hook_response.go  (go-jsonschema)
     ├── sdk-dotnet/    → HookEvent.cs, HookResponse.cs    (NJsonSchema)
@@ -95,7 +95,7 @@ Each SDK is a thin host binding. It:
 | Go (`polyhook-go`) | Wazero |
 | C# (`Polyhook.Sdk`) | Wasmtime |
 | Python (`polyhook`) | wasmtime-py |
-| Rust (`polyhook`) | native — links `polyhook-core` directly |
+| Rust (`sdk-rust`) | native — links `polyhook-core` directly |
 
 Any language with a WASM runtime can bind polyhook. See [BINDINGS.md](BINDINGS.md) for the raw WASM host API.
 
