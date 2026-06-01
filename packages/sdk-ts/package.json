@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
+    "test": "vitest run --changed",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {},
