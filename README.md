@@ -65,6 +65,8 @@ interface HookEvent {
 }
 ```
 
+Normalized tool names: [docs/tool-names.md](docs/tool-names.md)
+
 ### HookResponse
 
 ```typescript
@@ -213,6 +215,8 @@ else:
 | [Continue](https://continue.dev) | 🚧 In progress |
 | [Aider](https://aider.chat) | 🚧 In progress |
 | [Copilot](https://github.com/features/copilot) | 📋 Planned |
+
+Hook documentation for each tool: [docs/tool-names.md](docs/tool-names.md)
 
 ---
 

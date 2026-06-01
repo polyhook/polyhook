@@ -2,6 +2,8 @@
 
 Full mapping from each AI tool's vendor name to the canonical polyhook name.
 
+Source hook docs: [Claude Code](https://code.claude.com/docs/en/hooks) · [Cursor](https://cursor.com/docs/hooks) · [Windsurf](https://docs.windsurf.com/windsurf/cascade/hooks) · [Cline](https://github.com/cline/cline) · [Amp](https://ampcode.com/manual)
+
 ---
 
 ## File Operations

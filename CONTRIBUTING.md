@@ -48,6 +48,8 @@ dotnet test packages/sdk-dotnet
 
 ## Adding Support for a New AI Tool
 
+Hook documentation for each supported tool: [docs/tool-names.md](docs/tool-names.md)
+
 All changes go in `crates/polyhook-core/src/`:
 
 1. **`detect.rs`** — add detection heuristics (env vars, stdin shape) for the new tool
@@ -75,4 +77,4 @@ wasm-pack build crates/polyhook-core --target bundler --out-dir ../../polyhook.w
 
 - One concern per PR
 - Tests required for new tool support (add a fixture in `crates/polyhook-core/tests/fixtures/`)
-- Update `docs/tool-names.md` for new tool name mappings
+- Update [`docs/tool-names.md`](docs/tool-names.md) for new tool name mappings
