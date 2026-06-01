@@ -9,6 +9,9 @@ description = "polyhook Python SDK — write AI coding agent hooks once, run the
 requires-python = ">=3.10"
 dependencies = ["wasmtime>=20.0.0"]
 
+[tool.pytest.ini_options]
+testpaths = ["src/polyhook"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

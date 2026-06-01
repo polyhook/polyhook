@@ -24,4 +24,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Polyhook.Sdk.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\HookEventTests.cs" />
+    <Compile Include="..\HookResponseTests.cs" />
+    <Compile Include="..\PolyhookApiTests.cs" />
+  </ItemGroup>
 </Project>

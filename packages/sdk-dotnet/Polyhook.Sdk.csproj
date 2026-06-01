@@ -15,6 +15,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="PolyhookTests/**/*.cs" />
+    <Compile Remove="*Tests.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Wasmtime" Version="14.0.0" />

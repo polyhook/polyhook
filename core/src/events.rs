@@ -72,3 +72,20 @@ fn normalize_amp_event(vendor: &str) -> Option<&'static str> {
         _ => None,
     }
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_event;
+    use crate::types::CallerKind;
+
+    #[test]
+    fn unknown_caller_returns_original_string() {
+        assert_eq!(normalize_event("SomeVendorEvent", &CallerKind::Unknown), "SomeVendorEvent");
+        assert_eq!(normalize_event("PreToolUse", &CallerKind::Unknown), "PreToolUse");
+        assert_eq!(normalize_event("", &CallerKind::Unknown), "");
+    }
+}

@@ -2,6 +2,7 @@
 source = src
 omit =
     */generated_models.py
+    */test_*.py
     */.venv/*
 
 [report]
