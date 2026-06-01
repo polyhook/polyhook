@@ -17,7 +17,8 @@ npm install
 ## Project Structure
 
 ```
-crates/polyhook-core/   Rust core — the only place logic lives
+core/                   Rust core — the only place logic lives
+packages/sdk-rust/      Rust SDK
 packages/sdk-ts/        TypeScript bindings
 packages/sdk-go/        Go bindings
 packages/sdk-dotnet/    C# bindings
@@ -28,7 +29,7 @@ packages/sdk-python/    Python bindings
 
 ```bash
 # Build WASM artifact (required before building any language SDK)
-wasm-pack build crates/polyhook-core --target bundler --out-dir ../../polyhook.wasm
+wasm-pack build core --target bundler --out-dir ../../polyhook.wasm
 
 # Build all SDKs
 cargo build                  # Rust (native)
@@ -50,7 +51,7 @@ dotnet test packages/sdk-dotnet
 
 Hook documentation for each supported tool: [docs/tool-names.md](docs/tool-names.md)
 
-All changes go in `crates/polyhook-core/src/`:
+All changes go in `core/src/`:
 
 1. **`detect.rs`** — add detection heuristics (env vars, stdin shape) for the new tool
 2. **`tools.rs`** — add vendor → canonical tool name mappings
@@ -62,7 +63,7 @@ Add the tool to the supported tools table in `README.md` and `ARCHITECTURE.md`.
 Rebuild WASM after any core change — all language SDKs pick it up automatically:
 
 ```bash
-wasm-pack build crates/polyhook-core --target bundler --out-dir ../../polyhook.wasm
+wasm-pack build core --target bundler --out-dir ../../polyhook.wasm
 ```
 
 ## Adding a New Language Binding
@@ -76,5 +77,5 @@ wasm-pack build crates/polyhook-core --target bundler --out-dir ../../polyhook.w
 ## Pull Requests
 
 - One concern per PR
-- Tests required for new tool support (add a fixture in `crates/polyhook-core/tests/fixtures/`)
+- Tests required for new tool support (add a fixture in `core/tests/fixtures/`)
 - Update [`docs/tool-names.md`](docs/tool-names.md) for new tool name mappings

@@ -104,7 +104,7 @@ if (event.tool === "bash" && /rm\s+-rf\s+\//.test(event.input?.command as string
 
 ### Rust
 
-The only SDK that links polyhook-core natively — no WASM overhead.
+The only SDK that links core natively — no WASM overhead.
 
 ```bash
 cargo add polyhook
@@ -225,7 +225,7 @@ Source of truth: [tools.toml](tools.toml) — hook documentation links: [docs/to
 
 ## Design Goals
 
-- **One implementation.** All detection and serialization logic lives in `polyhook-core`. Language SDKs cannot diverge.
+- **One implementation.** All detection and serialization logic lives in `core`. Language SDKs cannot diverge.
 - **Runtime only.** No code generation. polyhook runs inside your binary at hook invocation time.
 - **Transparent fallback.** Unknown caller → `caller: "unknown"`, best-effort parse. Your logic keeps running.
 - **Bring your own runtime.** Each SDK ships `polyhook.wasm` and a thin host binding. Swap the WASM runtime if your platform requires it.
@@ -234,7 +234,7 @@ Source of truth: [tools.toml](tools.toml) — hook documentation links: [docs/to
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). To add tool support, add detection heuristics and mappings to `crates/polyhook-core` — all language SDKs pick it up automatically on the next WASM build.
+See [CONTRIBUTING.md](CONTRIBUTING.md). To add tool support, add detection heuristics and mappings to `crates/core` — all language SDKs pick it up automatically on the next WASM build.
 
 ---
 

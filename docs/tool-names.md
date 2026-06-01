@@ -57,4 +57,4 @@ Source hook docs: [Claude Code](https://code.claude.com/docs/en/hooks) · [Curso
 - A `—` means the tool has no equivalent for that operation.
 - Vendor names are matched case-insensitively during normalization.
 - If a tool name is not in this table, polyhook passes it through as-is and sets `tool` to the raw vendor name.
-- To propose a new mapping, open a PR editing `crates/polyhook-core/src/tools.rs` and this file.
+- To propose a new mapping, open a PR editing `core/src/tools.rs` and this file.

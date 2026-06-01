@@ -6,7 +6,7 @@ The core logic — tool detection, event normalization, response serialization �
 
 ```
 ┌─────────────────────────────────────────┐
-│           polyhook-core (Rust)          │
+│           core (Rust)          │
 │  detection · normalization · serde      │
 └──────────────────┬──────────────────────┘
                    │ wasm-pack / wasm-bindgen
@@ -25,10 +25,9 @@ No logic is re-implemented per language. All SDKs call the same WASM binary, so 
 
 ```
 polyhook/
-├── crates/
-│   └── polyhook-core/     # Rust: detection, normalization, serde — compiled to WASM + native
+├── core/          # Rust: detection, normalization, serde — compiled to WASM + native
 ├── packages/
-│   ├── sdk-rust/          # Rust SDK (native, links polyhook-core directly)
+│   ├── sdk-rust/          # Rust SDK (native, links core directly)
 │   │   └── examples/
 │   ├── sdk-ts/            # TypeScript bindings (wasm-bindgen)
 │   │   └── examples/
@@ -52,7 +51,7 @@ All SDK types (`HookEvent`, `HookResponse`, and related enums) are auto-generate
 ```
 schema.json
     │
-    ├── crates/polyhook-core/ → types.rs   (typify)  ← used by WASM + native core
+    ├── core/ → types.rs   (typify)  ← used by WASM + native core
     ├── packages/sdk-rust/    → types.rs   (typify)  ← Rust SDK
     ├── sdk-ts/        → HookEvent.ts, HookResponse.ts   (json-schema-to-typescript)
     ├── sdk-go/        → hook_event.go, hook_response.go  (go-jsonschema)
@@ -64,9 +63,9 @@ Changing a field in `schema.json` and rebuilding propagates the change to every 
 
 ---
 
-## polyhook-core
+## core
 
-`crates/polyhook-core` is the single source of truth. It handles:
+`core` is the single source of truth. It handles:
 
 - **Caller detection** — identifies which AI tool invoked the binary from stdin shape and environment variables
 - **Event normalization** — maps vendor-specific event/tool names to the canonical polyhook schema
@@ -95,7 +94,7 @@ Each SDK is a thin host binding. It:
 | Go (`polyhook-go`) | Wazero |
 | C# (`Polyhook.Sdk`) | Wasmtime |
 | Python (`polyhook`) | wasmtime-py |
-| Rust (`sdk-rust`) | native — links `polyhook-core` directly |
+| Rust (`sdk-rust`) | native — links `core` directly |
 
 Any language with a WASM runtime can bind polyhook. See [BINDINGS.md](BINDINGS.md) for the raw WASM host API.
 
@@ -114,7 +113,7 @@ Detection runs in priority order:
 
 ## Tool Name Normalization
 
-Each AI tool uses different names for the same operation. The mapping table in `polyhook-core` translates vendor names to canonical polyhook names at parse time.
+Each AI tool uses different names for the same operation. The mapping table in `core` translates vendor names to canonical polyhook names at parse time.
 
 | polyhook name | Claude Code | Cursor | Windsurf | Cline | Amp |
 |---|---|---|---|---|---|
@@ -144,7 +143,7 @@ Full table: [docs/tool-names.md](docs/tool-names.md)
 
 ## Adding a New Tool
 
-All changes go in `crates/polyhook-core`:
+All changes go in `core`:
 
 1. Add detection heuristics to `src/detect.rs`
 2. Add tool name mappings to `src/tools.rs`
