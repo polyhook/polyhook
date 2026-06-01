@@ -26,12 +26,18 @@ No logic is re-implemented per language. All SDKs call the same WASM binary, so 
 ```
 polyhook/
 ├── crates/
-│   └── polyhook-core/     # Rust: detection, normalization, serde — compiled to WASM + native
+│   ├── polyhook-core/     # Rust: detection, normalization, serde — compiled to WASM + native
+│   └── polyhook/          # Rust SDK (native, no WASM overhead)
+│       └── examples/
 ├── packages/
 │   ├── sdk-ts/            # TypeScript bindings (wasm-bindgen)
+│   │   └── examples/
 │   ├── sdk-go/            # Go bindings (Wazero)
+│   │   └── examples/
 │   ├── sdk-dotnet/        # C# bindings (Wasmtime)
+│   │   └── examples/
 │   └── sdk-python/        # Python bindings (wasmtime-py)
+│       └── examples/
 └── polyhook.wasm          # built artifact, bundled into each SDK package
 ```
 
