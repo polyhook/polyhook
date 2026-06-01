@@ -38,8 +38,27 @@ polyhook/
 │   │   └── examples/
 │   └── sdk-python/        # Python bindings (wasmtime-py)
 │       └── examples/
-└── polyhook.wasm          # built artifact, bundled into each SDK package
+├── polyhook.wasm          # built artifact, bundled into each SDK package
+└── schema.json            # single source of truth — types auto-generated from this into every SDK
 ```
+
+---
+
+## Type Generation
+
+All SDK types (`HookEvent`, `HookResponse`, and related enums) are auto-generated from `schema.json` at build time. No type is hand-written in any language binding.
+
+```
+schema.json
+    │
+    ├── sdk-ts/        → HookEvent.ts, HookResponse.ts   (json-schema-to-typescript)
+    ├── sdk-go/        → hook_event.go, hook_response.go  (go-jsonschema)
+    ├── sdk-dotnet/    → HookEvent.cs, HookResponse.cs    (NJsonSchema)
+    ├── sdk-python/    → models.py                        (datamodel-code-generator)
+    └── crates/polyhook/ → types.rs                       (typify)
+```
+
+Changing a field in `schema.json` and rebuilding propagates the change to every SDK simultaneously.
 
 ---
 
