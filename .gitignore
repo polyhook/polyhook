@@ -1,3 +1,37 @@
+# env
 .env
+
+# Rust / Cargo
 target/
+Cargo.lock
+
+# WASM build artifact (rebuilt via `make wasm`)
+polyhook.wasm
+
+# Node / TypeScript
 node_modules/
+dist/
+*.tsbuildinfo
+
+# Go
+packages/sdk-go/polyhook.wasm
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+.pytest_cache/
+packages/sdk-python/src/polyhook/polyhook.wasm
+
+# .NET / C#
+bin/
+obj/
+*.user
+*.suo
+.vs/
+packages/sdk-dotnet/polyhook.wasm
+
+# Generated types are committed (available without codegen toolchain)
+# Regenerate with: make schema
