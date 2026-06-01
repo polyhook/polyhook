@@ -172,3 +172,49 @@ help:
 	@echo "  Python     : pip install datamodel-code-generator"
 	@echo "  .NET       : dotnet tool install --global NJsonSchema.CodeGeneration.CLI"
 	@echo "  wasm-pack  : cargo install wasm-pack"
+
+# ── Coverage (100% required, generated code excluded) ─────────────────────────
+
+## test-coverage: Run all SDKs with 100% coverage enforcement
+test-coverage: coverage/rust coverage/ts coverage/go coverage/python coverage/dotnet
+	@echo "All coverage checks passed."
+
+## coverage/rust: Rust (core + sdk-rust) coverage via cargo-llvm-cov
+coverage/rust:
+	cargo llvm-cov --workspace \
+		--ignore-filename-regex 'types\.rs$$' \
+		--fail-under-lines 100 \
+		--lcov --output-path target/lcov-rust.info
+
+## coverage/ts: TypeScript SDK coverage via Vitest
+coverage/ts:
+	cd packages/sdk-ts && pnpm test:coverage
+
+## coverage/go: Go SDK coverage (exclude generated_types.go)
+coverage/go:
+	cd packages/sdk-go && \
+	  go test -coverprofile=coverage.out \
+	     -coverpkg=$$(go list ./... | grep -v '^$$') \
+	     ./... && \
+	  go tool cover -func=coverage.out | \
+	    grep -v 'generated_types\.go' | \
+	    awk '/total:/{if ($$3 != "100.0%") { print "Go coverage: "$$3" (need 100%)"; exit 1 }}'
+
+## coverage/python: Python SDK coverage via pytest-cov
+coverage/python:
+	cd packages/sdk-python && \
+	  uv run pytest --cov=polyhook --cov-report=term-missing \
+	    --cov-fail-under=100 \
+	    --cov-config=.coveragerc
+
+## coverage/dotnet: .NET SDK coverage via coverlet
+coverage/dotnet:
+	cd packages/sdk-dotnet && \
+	  dotnet test PolyhookTests/ \
+	    /p:CollectCoverage=true \
+	    /p:CoverletOutputFormat=opencover \
+	    /p:Exclude="[*]*.GeneratedTypes" \
+	    /p:ThresholdType=line \
+	    /p:Threshold=100
+
+.PHONY: test-coverage coverage/rust coverage/ts coverage/go coverage/python coverage/dotnet

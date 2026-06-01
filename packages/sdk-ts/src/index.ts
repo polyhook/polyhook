@@ -109,10 +109,11 @@ function readLengthPrefixed(wasm: WasmExports, ptr: number): Uint8Array {
 // ---------------------------------------------------------------------------
 
 async function readStdin(): Promise<Buffer> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
     process.stdin.on('data', (c: Buffer) => chunks.push(c))
     process.stdin.on('end', () => resolve(Buffer.concat(chunks)))
+    process.stdin.on('error', (err: Error) => reject(err))
   })
 }
 

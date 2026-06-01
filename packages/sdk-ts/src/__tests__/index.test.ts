@@ -13,7 +13,12 @@
  *                                        is pass-through in tests)
  */
 
+import { vi } from 'vitest'
 import { read, respond, approve, block, modify, _setWasmInstance, WasmExports, HookEvent, HookResponse, CallerKind } from '../index'
+
+// Mock the 'fs' module so we can control readFileSync behaviour.
+vi.mock('fs')
+import * as fs from 'fs'
 
 // ---------------------------------------------------------------------------
 // Mock WASM factory
@@ -351,5 +356,65 @@ describe('mock WASM memory layout', () => {
     const parsed = JSON.parse(text) as { envelope: boolean; payload: HookResponse }
     expect(parsed.envelope).toBe(true)
     expect(parsed.payload.action).toBe('approve')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getWasm() — real loading path (fs.readFileSync error)
+// ---------------------------------------------------------------------------
+
+describe('getWasm() — WASM file not found', () => {
+  beforeEach(() => {
+    // Force the real WASM loading path by resetting the cached instance.
+    _setWasmInstance(null)
+  })
+
+  afterEach(() => {
+    vi.resetAllMocks()
+    // Leave _wasm as null; subsequent test suites inject their own mock.
+    _setWasmInstance(null)
+  })
+
+  test('rejects when polyhook.wasm is missing (ENOENT)', async () => {
+    // Make readFileSync throw ENOENT so the getWasm() path is exercised.
+    ;vi.mocked(fs.readFileSync).mockImplementation(() => {
+      const err = Object.assign(new Error('ENOENT: no such file or directory'), { code: 'ENOENT' })
+      throw err
+    })
+
+    // Also supply a valid stdin so the test failure comes from getWasm(), not
+    // from stdin being exhausted.
+    mockStdin(CLAUDE_CODE_PRE_TOOL_CALL)
+
+    await expect(read()).rejects.toThrow('ENOENT')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// readStdin() — error event path
+// ---------------------------------------------------------------------------
+
+describe('readStdin() — stdin error event', () => {
+  afterEach(() => {
+    _setWasmInstance(null)
+    vi.resetAllMocks()
+  })
+
+  test('rejects when stdin emits an error event', async () => {
+    // Inject a mock WASM so getWasm() succeeds and we reach readStdin().
+    const wasm = buildMockWasm((json) => JSON.parse(json) as HookEvent)
+    _setWasmInstance(wasm)
+
+    // Create a Readable that will be destroyed with an error.
+    const { Readable } = require('stream') as typeof import('stream')
+    const errReadable = new Readable({ read() {} })
+    Object.defineProperty(process, 'stdin', { value: errReadable, writable: true, configurable: true })
+
+    // Destroy the stream asynchronously so read() has time to attach its
+    // 'error' listener before the error fires.
+    const stdinError = new Error('stdin pipe broken')
+    setImmediate(() => errReadable.destroy(stdinError))
+
+    await expect(read()).rejects.toThrow('stdin pipe broken')
   })
 })

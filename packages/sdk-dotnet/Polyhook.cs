@@ -5,6 +5,40 @@ using Wasmtime;
 
 namespace Polyhook;
 
+// ---------------------------------------------------------------------------
+// IWasmInvoker — seam for testing without a real WASM binary
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// Abstraction over the WASM call used by <see cref="Polyhook"/> so that
+/// unit tests can inject a mock without needing a real <c>polyhook.wasm</c>.
+/// </summary>
+internal interface IWasmInvoker
+{
+    /// <summary>
+    /// Executes a WASM guest function.
+    /// </summary>
+    /// <param name="wasmCall">
+    /// Delegate that receives the instantiated <see cref="Instance"/>, the
+    /// pointer to the input buffer, and the input length; returns the result
+    /// pointer (length-prefixed).
+    /// </param>
+    /// <param name="inputBytes">Raw bytes to pass into WASM linear memory.</param>
+    /// <returns>The raw payload bytes (after stripping the 4-byte length prefix).</returns>
+    byte[] Invoke(Func<Instance, int, int, int> wasmCall, byte[] inputBytes);
+}
+
+/// <summary>
+/// Production implementation of <see cref="IWasmInvoker"/> that delegates to
+/// the private <c>InvokeWasm</c> helper on <see cref="Polyhook"/>.
+/// </summary>
+internal sealed class DefaultWasmInvoker : IWasmInvoker
+{
+    /// <inheritdoc/>
+    public byte[] Invoke(Func<Instance, int, int, int> wasmCall, byte[] inputBytes) =>
+        Polyhook.InvokeWasm(wasmCall, inputBytes);
+}
+
 /// <summary>
 /// Entry-point for polyhook. Wraps the embedded <c>polyhook.wasm</c> via
 /// Wasmtime and exposes a minimal async API for reading hook events and
@@ -34,6 +68,17 @@ public static class Polyhook
     private static volatile string? s_lastCaller;
 
     // ---------------------------------------------------------------------------
+    // Testability seam — replace with a mock in unit tests
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// The <see cref="IWasmInvoker"/> used by <see cref="ReadAsync"/> and
+    /// <see cref="RespondAsync"/>. Tests may substitute a mock here; always
+    /// restore the default after each test.
+    /// </summary>
+    internal static IWasmInvoker WasmInvoker { get; set; } = new DefaultWasmInvoker();
+
+    // ---------------------------------------------------------------------------
     // Public API
     // ---------------------------------------------------------------------------
 
@@ -41,15 +86,23 @@ public static class Polyhook
     /// Reads the raw stdin payload, passes it through <c>polyhook.wasm</c> for
     /// normalisation, and returns a <see cref="HookEvent"/>.
     /// </summary>
-    public static async Task<HookEvent> ReadAsync(CancellationToken cancellationToken = default)
+    /// <param name="inputStream">
+    /// Stream to read the raw hook payload from. Defaults to
+    /// <see cref="Console.OpenStandardInput()"/> when <see langword="null"/>.
+    /// </param>
+    /// <param name="cancellationToken">Propagates notification that operations should be cancelled.</param>
+    public static async Task<HookEvent> ReadAsync(
+        Stream? inputStream = null,
+        CancellationToken cancellationToken = default)
     {
         // 1. Read all stdin bytes.
+        var source = inputStream ?? Console.OpenStandardInput();
         using var ms = new MemoryStream();
-        await Console.OpenStandardInput().CopyToAsync(ms, cancellationToken);
+        await source.CopyToAsync(ms, cancellationToken);
         var stdinBytes = ms.ToArray();
 
         // 2. Invoke WASM parse().
-        var resultJson = InvokeWasm(
+        var resultJson = WasmInvoker.Invoke(
             static (instance, inputPtr, inputLen) =>
             {
                 var parse = instance.GetFunction<int, int, int>("parse")
@@ -76,15 +129,22 @@ public static class Polyhook
     /// Must be called after <see cref="ReadAsync"/> — detection state from the
     /// previous parse call is used internally by the WASM module.
     /// </remarks>
+    /// <param name="response">The hook response to serialise and emit.</param>
+    /// <param name="outputStream">
+    /// Stream to write the serialised response to. Defaults to
+    /// <see cref="Console.OpenStandardOutput()"/> when <see langword="null"/>.
+    /// </param>
+    /// <param name="cancellationToken">Propagates notification that operations should be cancelled.</param>
     public static async Task RespondAsync(
         HookResponse response,
+        Stream? outputStream = null,
         CancellationToken cancellationToken = default)
     {
         // 1. Serialise the HookResponse to JSON.
         var responseJson = JsonSerializer.SerializeToUtf8Bytes(response, s_jsonOptions);
 
         // 2. Invoke WASM serialize().
-        var outBytes = InvokeWasm(
+        var outBytes = WasmInvoker.Invoke(
             static (instance, inputPtr, inputLen) =>
             {
                 var serialize = instance.GetFunction<int, int, int>("serialize")
@@ -93,8 +153,8 @@ public static class Polyhook
             },
             responseJson);
 
-        // 3. Write caller-formatted bytes to stdout.
-        var stdout = Console.OpenStandardOutput();
+        // 3. Write caller-formatted bytes to the output stream.
+        var stdout = outputStream ?? Console.OpenStandardOutput();
         await stdout.WriteAsync(outBytes, cancellationToken);
         await stdout.FlushAsync(cancellationToken);
     }
@@ -133,7 +193,7 @@ public static class Polyhook
     ///   <item>Returns the raw payload bytes.</item>
     /// </list>
     /// </summary>
-    private static byte[] InvokeWasm(
+    internal static byte[] InvokeWasm(
         Func<Instance, int, int, int> wasmCall,
         byte[] inputBytes)
     {

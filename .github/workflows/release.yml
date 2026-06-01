@@ -1,0 +1,143 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write   # create GitHub Release
+
+jobs:
+  # ── Build WASM ──────────────────────────────────────────────────────────────
+  build-wasm:
+    name: Build WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: jetli/wasm-pack-action@v0.4.0
+      - run: make wasm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: polyhook-wasm
+          path: polyhook.wasm
+          retention-days: 1
+
+  # ── npm (@polyhook/sdk → npmjs.com) ─────────────────────────────────────────
+  # Required secret: NPM_TOKEN
+  publish-npm:
+    name: Publish npm
+    runs-on: ubuntu-latest
+    needs: build-wasm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+          cache-dependency-path: packages/sdk-ts/pnpm-lock.yaml
+      - uses: actions/download-artifact@v4
+        with:
+          name: polyhook-wasm
+          path: packages/sdk-ts
+      - run: pnpm install
+        working-directory: packages/sdk-ts
+      - run: pnpm build
+        working-directory: packages/sdk-ts
+      - run: pnpm publish --no-git-checks --access public
+        working-directory: packages/sdk-ts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # ── crates.io (polyhook-core + polyhook) ────────────────────────────────────
+  # Required secret: CRATES_IO_TOKEN
+  # Note: sdk-rust uses a path dep on polyhook-core; we publish core first,
+  # wait for indexing, then patch the dep and publish the SDK.
+  publish-crates:
+    name: Publish crates.io
+    runs-on: ubuntu-latest
+    needs: build-wasm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Publish polyhook-core
+        run: cargo publish -p polyhook-core --token ${{ secrets.CRATES_IO_TOKEN }}
+      - name: Wait for crates.io to index polyhook-core
+        run: sleep 30
+      - name: Patch path dep → version dep for publishing sdk-rust
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s|polyhook-core = { path = \"../../core\" }|polyhook-core = { version = \"$VERSION\" }|" \
+            packages/sdk-rust/Cargo.toml
+      - name: Publish polyhook (sdk-rust)
+        run: cargo publish -p polyhook --token ${{ secrets.CRATES_IO_TOKEN }}
+
+  # ── PyPI (polyhook) ──────────────────────────────────────────────────────────
+  # Required secret: PYPI_TOKEN
+  publish-pypi:
+    name: Publish PyPI
+    runs-on: ubuntu-latest
+    needs: build-wasm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: polyhook-wasm
+          path: packages/sdk-python/src/polyhook
+      - run: uv build
+        working-directory: packages/sdk-python
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/sdk-python/dist
+          password: ${{ secrets.PYPI_TOKEN }}
+
+  # ── NuGet (Polyhook.Sdk) ─────────────────────────────────────────────────────
+  # Required secret: NUGET_API_KEY
+  publish-nuget:
+    name: Publish NuGet
+    runs-on: ubuntu-latest
+    needs: build-wasm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: polyhook-wasm
+          path: packages/sdk-dotnet
+      - run: dotnet pack -c Release
+        working-directory: packages/sdk-dotnet
+      - run: >
+          dotnet nuget push bin/Release/*.nupkg
+          --api-key ${{ secrets.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+        working-directory: packages/sdk-dotnet
+
+  # ── GitHub Release ──────────────────────────────────────────────────────────
+  # Creates the release and attaches polyhook.wasm as a binary asset.
+  # Runs even if individual publish jobs fail — as long as wasm built.
+  # Go module is available automatically via the tag (no publish step needed).
+  github-release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-wasm, publish-npm, publish-crates, publish-pypi, publish-nuget]
+    if: always() && needs.build-wasm.result == 'success'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: polyhook-wasm
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: polyhook.wasm
+          generate_release_notes: true

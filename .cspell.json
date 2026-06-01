@@ -90,7 +90,24 @@
     "pyproject",
     "autouse",
     "uppercases",
-    "pipefail"
+    "pipefail",
+    "dtolnay",
+    "Swatinem",
+    "jetli",
+    "softprops",
+    "astral",
+    "nupkg",
+    "nuget",
+    "NuGet",
+    "pypi",
+    "PyPI",
+    "crates",
+    "npmjs",
+    "noreply",
+    "pnpm",
+    "rerun",
+    "wasm32",
+    "pypa"
   ],
   "overrides": [
     {

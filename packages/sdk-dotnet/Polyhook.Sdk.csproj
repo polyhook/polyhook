@@ -9,6 +9,9 @@
     <RootNamespace>Polyhook</RootNamespace>
     <Description>C# SDK for polyhook — write AI coding agent hooks once, run them everywhere.</Description>
     <Authors>polyhook</Authors>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>opencover</CoverletOutputFormat>
+    <Exclude>[*]*.GeneratedTypes</Exclude>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="PolyhookTests/**/*.cs" />

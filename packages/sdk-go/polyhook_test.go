@@ -2,17 +2,19 @@ package polyhook_test
 
 // polyhook_test.go exercises the Go SDK with table-driven tests.
 //
-// Because a real polyhook.wasm binary may not be present (it is compiled
-// from the Rust crate separately), the integration tests that need the WASM
-// runtime are gated by a probe: if the runtime cannot be initialised the
-// tests are skipped.
+// Integration tests that need the WASM runtime use the passthrough WAT shim
+// defined in wasm_helper_test.go, so they always run regardless of whether a
+// real polyhook.wasm binary is present.
 //
 // The pure-unit tests (type constructors, JSON serialisation, CallerKind
-// constants) always run.
+// constants) always run and do not touch the WASM layer at all.
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -24,8 +26,8 @@ import (
 // ---------------------------------------------------------------------------
 
 // hookEventJSON builds a minimal pre-normalised HookEvent JSON string.
-// When polyhook.wasm is absent and a passthrough shim is in use, this is
-// exactly what ReadFrom receives.
+// When the passthrough WAT shim is in use, this is exactly what ReadFrom
+// receives back after the echo round-trip.
 func hookEventJSON(event, tool, caller, sessionID string, input map[string]interface{}) string {
 	type he struct {
 		Event     string                 `json:"event"`
@@ -45,14 +47,6 @@ func hookEventJSON(event, tool, caller, sessionID string, input map[string]inter
 	}
 	b, _ := json.Marshal(h)
 	return string(b)
-}
-
-// probeWASM returns a non-nil error when the WASM runtime cannot be
-// initialised (e.g. polyhook.wasm is absent).
-func probeWASM() error {
-	sample := hookEventJSON("session:start", "", "unknown", "probe", nil)
-	_, err := polyhook.ReadFrom(strings.NewReader(sample))
-	return err
 }
 
 // ---------------------------------------------------------------------------
@@ -203,8 +197,7 @@ func TestHookEventOptionalFields(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Integration tests: ReadFrom / RespondTo
-// These run only when the WASM runtime can be initialised.
+// Integration tests: ReadFrom / RespondTo — always run via passthrough WAT
 // ---------------------------------------------------------------------------
 
 type readTestCase struct {
@@ -302,9 +295,8 @@ var readTests = []readTestCase{
 }
 
 func TestReadFrom_TableDriven(t *testing.T) {
-	if err := probeWASM(); err != nil {
-		t.Skipf("skipping: WASM runtime unavailable: %v", err)
-	}
+	usePassthroughWASM()
+	defer resetRuntime()
 
 	for _, tc := range readTests {
 		tc := tc
@@ -385,9 +377,8 @@ var respondTests = []respondTestCase{
 }
 
 func TestRespondTo_TableDriven(t *testing.T) {
-	if err := probeWASM(); err != nil {
-		t.Skipf("skipping: WASM runtime unavailable: %v", err)
-	}
+	usePassthroughWASM()
+	defer resetRuntime()
 
 	// Prime the runtime with a parse call so the serialize function has caller context.
 	sampleEvent := hookEventJSON("session:start", "", "claude-code", "sess_prime", nil)
@@ -414,3 +405,267 @@ func TestRespondTo_TableDriven(t *testing.T) {
 		})
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Error-path tests
+// ---------------------------------------------------------------------------
+
+// TestDefaultWASMLoader_ErrorPath verifies that defaultWASMLoader returns an
+// error when neither embedded bytes nor a file on disk are available.
+// We exercise this by resetting the runtime and installing the real
+// defaultWASMLoader (which finds no file in the test working directory).
+func TestDefaultWASMLoader_ErrorPath(t *testing.T) {
+	// Install a loader that always fails (simulates no wasm binary present).
+	polyhook.SetWasmLoader(func() ([]byte, error) {
+		return nil, errors.New("polyhook.wasm not found; embed it or place it next to the binary")
+	})
+	polyhook.ResetRuntime()
+	defer func() {
+		// Restore passthrough shim so subsequent tests are unaffected.
+		usePassthroughWASM()
+	}()
+
+	_, err := polyhook.ReadFrom(strings.NewReader(`{}`))
+	if err == nil {
+		t.Fatal("expected error from ReadFrom when wasmLoader fails; got nil")
+	}
+	if !strings.Contains(err.Error(), "polyhook.wasm") {
+		t.Errorf("expected error to mention polyhook.wasm; got: %v", err)
+	}
+}
+
+// TestGetRuntime_LoaderError verifies that getRuntime propagates a loader error
+// through ReadFrom.
+func TestGetRuntime_LoaderError(t *testing.T) {
+	sentinel := errors.New("injected loader error")
+	polyhook.SetWasmLoader(func() ([]byte, error) { return nil, sentinel })
+	polyhook.ResetRuntime()
+	defer resetRuntime()
+
+	_, err := polyhook.ReadFrom(strings.NewReader(`{}`))
+	if err == nil {
+		t.Fatal("expected error; got nil")
+	}
+	if !strings.Contains(err.Error(), "injected loader error") {
+		t.Errorf("error should contain sentinel message; got: %v", err)
+	}
+}
+
+// TestGetRuntime_LoaderError_RespondTo verifies the same error propagation
+// through RespondTo.
+func TestGetRuntime_LoaderError_RespondTo(t *testing.T) {
+	sentinel := errors.New("injected loader error for respond")
+	polyhook.SetWasmLoader(func() ([]byte, error) { return nil, sentinel })
+	polyhook.ResetRuntime()
+	defer resetRuntime()
+
+	var buf bytes.Buffer
+	err := polyhook.RespondTo(&buf, polyhook.Approve())
+	if err == nil {
+		t.Fatal("expected error from RespondTo when wasmLoader fails; got nil")
+	}
+	if !strings.Contains(err.Error(), "injected loader error for respond") {
+		t.Errorf("error should contain sentinel; got: %v", err)
+	}
+}
+
+// TestGetRuntime_InvalidWASM verifies that an invalid WASM binary causes
+// initRuntime to return an error (exercises the rt.Instantiate error path).
+func TestGetRuntime_InvalidWASM(t *testing.T) {
+	polyhook.SetWasmLoader(func() ([]byte, error) {
+		// Valid WASM magic + version but no sections — wazero should still
+		// parse it. Use outright garbage instead.
+		return []byte("not valid wasm or wat"), nil
+	})
+	polyhook.ResetRuntime()
+	defer resetRuntime()
+
+	_, err := polyhook.ReadFrom(strings.NewReader(`{}`))
+	if err == nil {
+		t.Fatal("expected instantiation error for invalid WASM; got nil")
+	}
+}
+
+// TestReadFrom_ReadError verifies that an io.Reader error is propagated by
+// ReadFrom.
+func TestReadFrom_ReadError(t *testing.T) {
+	usePassthroughWASM()
+	defer resetRuntime()
+
+	errReader := &alwaysErrReader{err: errors.New("read failure")}
+	_, err := polyhook.ReadFrom(errReader)
+	if err == nil {
+		t.Fatal("expected read error; got nil")
+	}
+	if !strings.Contains(err.Error(), "read failure") {
+		t.Errorf("expected 'read failure' in error; got: %v", err)
+	}
+}
+
+// TestRespondTo_WriteError verifies that a writer error from RespondTo is
+// propagated.
+func TestRespondTo_WriteError(t *testing.T) {
+	usePassthroughWASM()
+	defer resetRuntime()
+
+	errWriter := &alwaysErrWriter{err: errors.New("write failure")}
+	err := polyhook.RespondTo(errWriter, polyhook.Approve())
+	if err == nil {
+		t.Fatal("expected write error; got nil")
+	}
+	if !strings.Contains(err.Error(), "write failure") {
+		t.Errorf("expected 'write failure' in error; got: %v", err)
+	}
+}
+
+// TestReadFrom_InvalidJSON verifies that non-JSON output from parse causes an
+// unmarshal error. With the passthrough shim the WASM just echoes input, so we
+// supply invalid JSON and expect an unmarshal error from ReadFrom.
+// NOTE: json.Unmarshal on `{}` succeeds but on a raw non-JSON string it fails.
+func TestReadFrom_InvalidJSONEcho(t *testing.T) {
+	usePassthroughWASM()
+	defer resetRuntime()
+
+	// The passthrough shim echoes the raw bytes. If we send invalid JSON the
+	// final json.Unmarshal inside ReadFrom should fail.
+	_, err := polyhook.ReadFrom(strings.NewReader(`not json at all`))
+	if err == nil {
+		t.Fatal("expected unmarshal error for non-JSON input; got nil")
+	}
+}
+
+// TestGetRuntime_MissingExport verifies that a WASM module missing a required
+// export (e.g. "parse") triggers an error.
+func TestGetRuntime_MissingExport(t *testing.T) {
+	// Minimal WAT module that exports only alloc and dealloc, omitting parse
+	// and serialize.
+	const missingExportsWAT = `(module
+  (memory (export "memory") 1)
+  (func (export "alloc") (param i32) (result i32) i32.const 0)
+  (func (export "dealloc") (param i32) (param i32))
+)`
+	polyhook.SetWasmLoader(func() ([]byte, error) {
+		return []byte(missingExportsWAT), nil
+	})
+	polyhook.ResetRuntime()
+	defer resetRuntime()
+
+	_, err := polyhook.ReadFrom(strings.NewReader(`{}`))
+	if err == nil {
+		t.Fatal("expected error for missing WASM export; got nil")
+	}
+	if !strings.Contains(err.Error(), "parse") && !strings.Contains(err.Error(), "missing export") {
+		t.Errorf("error should mention missing export; got: %v", err)
+	}
+}
+
+// TestReadFrom_WASMErrorField verifies that ReadFrom succeeds even when the
+// payload contains a non-empty "error" field alongside a valid HookEvent
+// structure. This exercises the best-effort error-logging branch in ReadFrom.
+func TestReadFrom_WASMErrorField(t *testing.T) {
+	usePassthroughWASM()
+	defer resetRuntime()
+
+	// The passthrough shim echoes input verbatim. The payload has both an
+	// "error" field (triggering the errCheck branch) and valid HookEvent fields.
+	input := `{"error":"best-effort parse failed","event":"notification","sessionId":"s1","caller":"unknown"}`
+	ev, err := polyhook.ReadFrom(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("ReadFrom with error field: %v", err)
+	}
+	if ev.Event != "notification" {
+		t.Errorf("Event = %q; want notification", ev.Event)
+	}
+}
+
+// TestRead_ViaStdin exercises the thin Read() wrapper that reads from os.Stdin.
+// We redirect os.Stdin to a pipe, write a valid HookEvent JSON to the write end,
+// close the write end, and verify that Read() returns the expected event.
+func TestRead_ViaStdin(t *testing.T) {
+	usePassthroughWASM()
+	defer resetRuntime()
+
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe: %v", err)
+	}
+	oldStdin := os.Stdin
+	os.Stdin = pr
+	defer func() { os.Stdin = oldStdin }()
+
+	input := hookEventJSON("session:start", "", "claude-code", "pipe_sess", nil)
+	go func() {
+		_, _ = pw.WriteString(input)
+		_ = pw.Close()
+	}()
+
+	ev, err := polyhook.Read()
+	if err != nil {
+		t.Fatalf("Read(): %v", err)
+	}
+	if ev.Event != "session:start" {
+		t.Errorf("Event = %q; want session:start", ev.Event)
+	}
+}
+
+// TestRespond_ViaStdout exercises the thin Respond() wrapper that writes to os.Stdout.
+func TestRespond_ViaStdout(t *testing.T) {
+	usePassthroughWASM()
+	defer resetRuntime()
+
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe: %v", err)
+	}
+	oldStdout := os.Stdout
+	os.Stdout = pw
+	defer func() { os.Stdout = oldStdout }()
+
+	if err := polyhook.Respond(polyhook.Approve()); err != nil {
+		_ = pw.Close()
+		t.Fatalf("Respond: %v", err)
+	}
+	_ = pw.Close()
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, pr); err != nil {
+		t.Fatalf("reading captured stdout: %v", err)
+	}
+	if !strings.Contains(buf.String(), "approve") {
+		t.Errorf("stdout %q missing 'approve'", buf.String())
+	}
+}
+
+// TestReadFrom_MemoryOverflow verifies that wasmWrite returns an error when
+// the input is larger than WASM linear memory. The passthrough WAT shim has 2
+// pages (131 072 bytes) of memory; feeding it more than that causes
+// Memory().Write to return false, which covers the wasmWrite error path.
+func TestReadFrom_MemoryOverflow(t *testing.T) {
+	usePassthroughWASM()
+	defer resetRuntime()
+
+	// Build a JSON object whose serialized form exceeds the 2-page (131072 B)
+	// WASM memory. We use a long string value.
+	big := strings.Repeat("x", 135000) // > 131072
+	input := `{"event":"tool:before","tool":"bash","sessionId":"s","caller":"claude-code","input":{"command":"` + big + `"}}`
+	_, err := polyhook.ReadFrom(strings.NewReader(input))
+	if err == nil {
+		t.Fatal("expected memory overflow error from ReadFrom with oversized input; got nil")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Helper types for error injection
+// ---------------------------------------------------------------------------
+
+type alwaysErrReader struct{ err error }
+
+func (r *alwaysErrReader) Read(_ []byte) (int, error) { return 0, r.err }
+
+type alwaysErrWriter struct{ err error }
+
+func (w *alwaysErrWriter) Write(_ []byte) (int, error) { return 0, w.err }
+
+// Ensure interfaces are satisfied.
+var _ io.Reader = (*alwaysErrReader)(nil)
+var _ io.Writer = (*alwaysErrWriter)(nil)

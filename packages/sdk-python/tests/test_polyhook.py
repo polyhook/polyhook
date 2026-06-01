@@ -6,6 +6,7 @@ The WASM module is mocked out so tests run without a real polyhook.wasm.
 
 from __future__ import annotations
 
+import builtins
 import io
 import json
 import struct
@@ -422,6 +423,131 @@ class TestMissingWasm:
         with patch("polyhook.sdk.Path", side_effect=fake_path_constructor):
             with pytest.raises(ImportError, match="polyhook.wasm not found"):
                 sdk._init_wasm()
+
+
+# ---------------------------------------------------------------------------
+# _init_wasm() specific path tests
+# ---------------------------------------------------------------------------
+
+class TestInitWasm:
+    def test_early_return_when_instance_already_set(self):
+        """_init_wasm() must return immediately when _instance is already set."""
+        import polyhook.sdk as sdk
+
+        sentinel = object()
+        sdk._instance = sentinel  # pre-set so _init_wasm should bail out
+
+        # If _init_wasm does NOT early-return it will try to import wasmtime
+        # or check the wasm file; both would fail/have side-effects.
+        # Patching Path to guarantee a failure if the early-return is skipped.
+        with patch("polyhook.sdk.Path") as mock_path:
+            sdk._init_wasm()
+            # Path should never have been called — we returned before reaching it.
+            mock_path.assert_not_called()
+
+        # _instance must still be the sentinel we set.
+        assert sdk._instance is sentinel
+
+    def test_happy_path_with_mocked_wasmtime(self):
+        """_init_wasm() happy path: file exists + wasmtime importable."""
+        import polyhook.sdk as sdk
+
+        # Start from a clean state (autouse fixture already does this, but be explicit).
+        sdk._store = None
+        sdk._instance = None
+        sdk._memory = None
+
+        # --- Fake wasmtime objects ----------------------------------------
+        fake_memory = MagicMock(name="memory")
+
+        fake_exports = {"memory": fake_memory}
+
+        fake_instance = MagicMock(name="Instance")
+        fake_instance.exports.return_value = fake_exports
+
+        fake_store = MagicMock(name="Store")
+
+        fake_module = MagicMock(name="Module")
+
+        FakeStore = MagicMock(return_value=fake_store)
+        FakeModule = MagicMock(name="Module_class")
+        FakeModule.from_file.return_value = fake_module
+        FakeInstance = MagicMock(return_value=fake_instance)
+
+        # --- Fake wasmtime module -----------------------------------------
+        fake_wasmtime_module = types.ModuleType("wasmtime")
+        fake_wasmtime_module.Store = FakeStore
+        fake_wasmtime_module.Module = FakeModule
+        fake_wasmtime_module.Instance = FakeInstance
+
+        # --- Fake path that reports the file exists -----------------------
+        fake_wasm_path = MagicMock()
+        fake_wasm_path.exists.return_value = True
+        fake_wasm_path.__str__ = MagicMock(return_value="/fake/polyhook.wasm")
+
+        fake_parent = MagicMock()
+        fake_parent.__truediv__ = MagicMock(return_value=fake_wasm_path)
+
+        fake_path_instance = MagicMock()
+        fake_path_instance.parent = fake_parent
+
+        def fake_path_constructor(*args):
+            return fake_path_instance
+
+        with patch("polyhook.sdk.Path", side_effect=fake_path_constructor):
+            with patch.dict(sys.modules, {"wasmtime": fake_wasmtime_module}):
+                sdk._init_wasm()
+
+        # After a successful _init_wasm the globals must be populated.
+        assert sdk._store is fake_store
+        assert sdk._instance is fake_instance
+        assert sdk._memory is fake_memory
+
+        # Verify the wasmtime objects were constructed correctly.
+        FakeStore.assert_called_once_with()
+        FakeModule.from_file.assert_called_once_with(
+            fake_store.engine, "/fake/polyhook.wasm"
+        )
+        FakeInstance.assert_called_once_with(fake_store, fake_module, [])
+
+    def test_wasmtime_import_error(self):
+        """_init_wasm() raises ImportError with a helpful message when wasmtime is absent."""
+        import polyhook.sdk as sdk
+
+        sdk._store = None
+        sdk._instance = None
+        sdk._memory = None
+
+        # Fake path that claims the file exists.
+        fake_wasm_path = MagicMock()
+        fake_wasm_path.exists.return_value = True
+        fake_wasm_path.__str__ = MagicMock(return_value="/fake/polyhook.wasm")
+
+        fake_parent = MagicMock()
+        fake_parent.__truediv__ = MagicMock(return_value=fake_wasm_path)
+
+        fake_path_instance = MagicMock()
+        fake_path_instance.parent = fake_parent
+
+        def fake_path_constructor(*args):
+            return fake_path_instance
+
+        # Remove wasmtime from sys.modules so "import wasmtime" inside
+        # _init_wasm raises ImportError naturally.
+        cleaned_modules = {k: v for k, v in sys.modules.items() if k != "wasmtime"}
+
+        original_import = builtins.__import__
+
+        def blocking_import(name, *args, **kwargs):
+            if name == "wasmtime":
+                raise ImportError("No module named 'wasmtime'")
+            return original_import(name, *args, **kwargs)
+
+        with patch("polyhook.sdk.Path", side_effect=fake_path_constructor):
+            with patch.dict(sys.modules, cleaned_modules, clear=True):
+                with patch("builtins.__import__", side_effect=blocking_import):
+                    with pytest.raises(ImportError, match="wasmtime is required"):
+                        sdk._init_wasm()
 
 
 # ---------------------------------------------------------------------------
