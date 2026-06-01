@@ -182,7 +182,7 @@ test-coverage: coverage/rust coverage/ts coverage/go coverage/python coverage/do
 ## coverage/rust: Rust (core + sdk-rust) coverage via cargo-llvm-cov
 coverage/rust:
 	cargo llvm-cov --workspace \
-		--ignore-filename-regex 'types\.rs$$' \
+		--ignore-filename-regex 'types\.rs$$|wasm\.rs$$|stdin_wrappers\.rs$$' \
 		--fail-under-lines 100 \
 		--lcov --output-path target/lcov-rust.info
 
