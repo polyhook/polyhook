@@ -12,3 +12,11 @@ if ! cspell "**" --no-progress 2>&1; then
   echo "pre-push: spell check failed. Fix errors above or add words to .cspell.json." >&2
   exit 1
 fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+echo "▶ Running coverage checks before push…"
+make test-coverage
+
+echo "✓ All coverage checks passed — proceeding with push."

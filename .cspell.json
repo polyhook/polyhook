@@ -107,7 +107,8 @@
     "pnpm",
     "rerun",
     "wasm32",
-    "pypa"
+    "pypa",
+    "toplevel"
   ],
   "overrides": [
     {
