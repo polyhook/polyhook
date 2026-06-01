@@ -120,7 +120,8 @@
     "initialises",
     "addopts",
     "esbuild",
-    "behaviour"
+    "behaviour",
+    "testpaths"
   ],
   "overrides": [
     {
