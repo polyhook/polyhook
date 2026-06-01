@@ -108,7 +108,19 @@
     "rerun",
     "wasm32",
     "pypa",
-    "toplevel"
+    "toplevel",
+    "nonoverlapping",
+    "Vitest",
+    "vitest",
+    "coverprofile",
+    "coverpkg",
+    "coveragerc",
+    "opencover",
+    "initialise",
+    "initialises",
+    "addopts",
+    "esbuild",
+    "behaviour"
   ],
   "overrides": [
     {
