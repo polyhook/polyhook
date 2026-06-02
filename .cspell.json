@@ -22,7 +22,8 @@
     "**/coverage/**",
     "**/bin/**",
     "**/*.deps.json",
-    "**/*.runtimeconfig.json"
+    "**/*.runtimeconfig.json",
+    "**/*.svg"
   ],
   "words": [
     "Polyhook",
