@@ -145,8 +145,8 @@ jobs:
             git commit -m "chore: update Go SDK polyhook.wasm for ${GITHUB_REF_NAME}"
             git push origin main
           fi
-          git tag "packages/sdk-go/${GITHUB_REF_NAME}"
-          git push origin "packages/sdk-go/${GITHUB_REF_NAME}"
+          git tag -f "packages/sdk-go/${GITHUB_REF_NAME}"
+          git push origin -f "packages/sdk-go/${GITHUB_REF_NAME}"
       - uses: softprops/action-gh-release@v2
         with:
           files: polyhook.wasm
