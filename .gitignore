@@ -5,8 +5,9 @@
 target/
 Cargo.lock
 
-# WASM build artifact at repo root (rebuilt via `make wasm`)
+# WASM build artifacts (rebuilt via `make wasm`; sdk-go is committed for //go:embed)
 /polyhook.wasm
+packages/sdk-ts/polyhook.wasm
 
 
 # Python
