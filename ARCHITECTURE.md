@@ -91,7 +91,7 @@ Each SDK is a thin host binding. It:
 | SDK | WASM runtime |
 |---|---|
 | TypeScript (`@polyhook/sdk`) | wasm-bindgen (browser / Node.js) |
-| Go (`polyhook-go`) | Wazero |
+| Go (`github.com/tupe12334/polyhook/packages/sdk-go`) | Wazero |
 | C# (`Polyhook.Sdk`) | Wasmtime |
 | Python (`polyhook`) | wasmtime-py |
 | Rust (`sdk-rust`) | native — links `core` directly |

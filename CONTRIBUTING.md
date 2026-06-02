@@ -3,7 +3,7 @@
 ## Setup
 
 ```bash
-git clone https://github.com/polyhook/polyhook
+git clone https://github.com/tupe12334/polyhook
 cd polyhook
 
 # Rust toolchain + wasm target
