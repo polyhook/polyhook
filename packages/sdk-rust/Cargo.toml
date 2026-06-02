@@ -5,6 +5,7 @@ edition = "2021"
 description = "polyhook Rust SDK — write AI coding agent hooks once, run them everywhere"
 license = "MIT"
 repository = "https://github.com/tupe12334/polyhook"
+homepage = "https://github.com/tupe12334/polyhook"
 readme = "README.md"
 
 [dependencies]

@@ -6,8 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "polyhook"
 version = "0.1.0"
 description = "polyhook Python SDK — write AI coding agent hooks once, run them everywhere"
+license = {text = "MIT"}
+authors = [{name = "tupe12334"}]
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["wasmtime>=20.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/tupe12334/polyhook"
+Repository = "https://github.com/tupe12334/polyhook"
 
 [tool.pytest.ini_options]
 testpaths = ["src/polyhook"]

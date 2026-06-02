@@ -9,6 +9,10 @@
     <RootNamespace>Polyhook</RootNamespace>
     <Description>C# SDK for polyhook — write AI coding agent hooks once, run them everywhere.</Description>
     <Authors>polyhook</Authors>
+    <LicenseExpression>MIT</LicenseExpression>
+    <PackageProjectUrl>https://github.com/tupe12334/polyhook</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tupe12334/polyhook</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <CollectCoverage>true</CollectCoverage>
     <CoverletOutputFormat>opencover</CoverletOutputFormat>
     <Exclude>[*]*.GeneratedTypes</Exclude>
@@ -24,5 +28,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="polyhook.wasm" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 </Project>

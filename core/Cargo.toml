@@ -5,6 +5,7 @@ edition = "2021"
 description = "Core types and utilities for polyhook — write AI coding agent hooks once, run them everywhere"
 license = "MIT"
 repository = "https://github.com/tupe12334/polyhook"
+homepage = "https://github.com/tupe12334/polyhook"
 readme = "README.md"
 
 [lib]
