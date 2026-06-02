@@ -128,7 +128,8 @@ wasm:
 	cargo build --release --target wasm32-unknown-unknown -p polyhook-core
 	cp target/wasm32-unknown-unknown/release/polyhook_core.wasm $(WASM_OUT)
 	cp $(WASM_OUT) packages/sdk-ts/polyhook.wasm
-	@echo "Done: $(WASM_OUT) and packages/sdk-ts/polyhook.wasm"
+	cp $(WASM_OUT) packages/sdk-go/polyhook.wasm
+	@echo "Done: $(WASM_OUT), packages/sdk-ts/polyhook.wasm, packages/sdk-go/polyhook.wasm"
 
 # ── test ──────────────────────────────────────────────────────────────────────
 ## test: Run the full test suite across all SDKs

@@ -8,8 +8,6 @@ Cargo.lock
 # WASM build artifact (rebuilt via `make wasm`)
 polyhook.wasm
 
-# Go
-packages/sdk-go/polyhook.wasm
 
 # Python
 __pycache__/

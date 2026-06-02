@@ -19,6 +19,7 @@ package polyhook
 
 import (
 	"context"
+	_ "embed"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -55,10 +56,9 @@ func Modify(input map[string]interface{}) HookResponse {
 // WASM runtime — lazy, singleton
 // ---------------------------------------------------------------------------
 
-// wasmBytes holds the embedded polyhook.wasm binary. The actual embed
-// directive is replaced at build time by the real file; here we use a
-// package-level variable that loadWASM() populates so that tests can inject
-// a custom binary.
+// wasmBytes holds the embedded polyhook.wasm binary.
+//
+//go:embed polyhook.wasm
 var wasmBytes []byte
 
 // wasmLoader may be overridden by tests to inject a custom WASM binary.

@@ -151,11 +151,23 @@ jobs:
     if: always() && needs.build-wasm.result == 'success'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           name: polyhook-wasm
-      - name: Tag Go submodule
+      - name: Update Go SDK WASM and tag submodule
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout main
+          git pull --ff-only origin main
+          cp polyhook.wasm packages/sdk-go/polyhook.wasm
+          git add packages/sdk-go/polyhook.wasm
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update Go SDK polyhook.wasm for ${GITHUB_REF_NAME}"
+            git push origin main
+          fi
           git tag "packages/sdk-go/${GITHUB_REF_NAME}"
           git push origin "packages/sdk-go/${GITHUB_REF_NAME}"
       - uses: softprops/action-gh-release@v2
