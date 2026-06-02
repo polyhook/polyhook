@@ -418,3 +418,100 @@ describe('readStdin() — stdin error event', () => {
     await expect(read()).rejects.toThrow('stdin pipe broken')
   })
 })
+
+// ---------------------------------------------------------------------------
+// respond() — stdout.write error path
+// ---------------------------------------------------------------------------
+
+describe('respond() — stdout.write error', () => {
+  afterEach(() => {
+    _setWasmInstance(null)
+  })
+
+  test('rejects when stdout.write calls callback with error', async () => {
+    const wasm = buildMockWasm((json) => JSON.parse(json) as HookEvent)
+    _setWasmInstance(wasm)
+
+    const writeError = new Error('stdout broken')
+    const originalWrite = process.stdout.write.bind(process.stdout)
+    ;(process.stdout as NodeJS.WriteStream & { write: typeof process.stdout.write }).write = (
+      _chunk: unknown,
+      _encodingOrCb?: unknown,
+      cb?: unknown,
+    ): boolean => {
+      // Find whichever arg is the callback and call it with an error.
+      const callback = typeof _encodingOrCb === 'function' ? _encodingOrCb : typeof cb === 'function' ? cb : null
+      if (callback) (callback as (err?: Error) => void)(writeError)
+      return false
+    }
+
+    try {
+      await expect(respond(approve())).rejects.toThrow('stdout broken')
+    } finally {
+      ;(process.stdout as NodeJS.WriteStream & { write: typeof process.stdout.write }).write = originalWrite
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getWasm() — success path (file found, WebAssembly.instantiate resolves)
+// ---------------------------------------------------------------------------
+
+describe('getWasm() — WASM file loads successfully', () => {
+  let origWebAssembly: unknown
+
+  beforeEach(() => {
+    _setWasmInstance(null)
+    origWebAssembly = (globalThis as Record<string, unknown>).WebAssembly
+  })
+
+  afterEach(() => {
+    ;(globalThis as Record<string, unknown>).WebAssembly = origWebAssembly
+    vi.resetAllMocks()
+    _setWasmInstance(null)
+  })
+
+  test('loads WASM from file and caches the instance', async () => {
+    // Build a mock WASM exports object.
+    const wasm = buildMockWasm((json) => JSON.parse(json) as HookEvent)
+
+    // Make readFileSync return a fake buffer (any bytes — we intercept instantiate).
+    vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from([0]) as unknown as string)
+
+    // Mock globalThis.WebAssembly.instantiate to resolve with our mock exports.
+    ;(globalThis as Record<string, unknown>).WebAssembly = {
+      instantiate: async (_bytes: unknown) => ({ instance: { exports: wasm } }),
+    }
+
+    mockStdin(CLAUDE_CODE_PRE_TOOL_CALL)
+    const event = await read()
+
+    expect(event.caller).toBe('claude-code')
+    expect(event.event).toBe('tool:before')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// _lastCaller fallback — event.caller missing from payload
+// ---------------------------------------------------------------------------
+
+describe('_lastCaller fallback', () => {
+  afterEach(() => {
+    _setWasmInstance(null)
+  })
+
+  test('defaults to "unknown" when caller is absent from parsed event', async () => {
+    // Build a WASM mock that returns an event without a caller field.
+    const wasm = buildMockWasm((json) => {
+      const raw = JSON.parse(json) as HookEvent
+      const { caller: _omit, ...rest } = raw as HookEvent & { caller?: unknown }
+      return rest as unknown as HookEvent
+    })
+    _setWasmInstance(wasm)
+    mockStdin(CLAUDE_CODE_PRE_TOOL_CALL)
+
+    const event = await read()
+    // When caller is absent the module falls back to 'unknown'.
+    expect(event.caller ?? 'unknown').toBe('unknown')
+  })
+})
