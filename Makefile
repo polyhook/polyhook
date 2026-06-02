@@ -217,7 +217,10 @@ coverage/python:
 	    --cov-config=.coveragerc
 
 ## coverage/dotnet: .NET SDK coverage via coverlet
+## Builds polyhook.wasm first (required as embedded resource in Polyhook.Sdk).
 coverage/dotnet:
+	cargo build -p polyhook-core --target wasm32-unknown-unknown --release --quiet
+	cp target/wasm32-unknown-unknown/release/polyhook_core.wasm packages/sdk-dotnet/polyhook.wasm
 	cd packages/sdk-dotnet && \
 	  dotnet test PolyhookTests/ \
 	    /p:CollectCoverage=true \

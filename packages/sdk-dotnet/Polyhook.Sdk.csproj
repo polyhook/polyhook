@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>Polyhook.Sdk</PackageId>
@@ -16,6 +16,7 @@
   <ItemGroup>
     <Compile Remove="PolyhookTests/**/*.cs" />
     <Compile Remove="*Tests.cs" />
+    <Compile Remove="examples/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Wasmtime" Version="14.0.0" />

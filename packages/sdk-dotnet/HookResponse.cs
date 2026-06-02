@@ -15,8 +15,12 @@ namespace Polyhook;
 [JsonDerivedType(typeof(ModifyResponse),  typeDiscriminator: "modify")]
 public abstract record HookResponse
 {
-    /// <summary>The discriminator value sent in the JSON payload.</summary>
-    [JsonPropertyName("action")]
+    /// <summary>
+    /// The discriminator value; matches the JSON 'action' field.
+    /// Marked [JsonIgnore] so the serializer uses only the [JsonPolymorphic]
+    /// discriminator (avoids the 'action' property conflict in .NET 10+).
+    /// </summary>
+    [JsonIgnore]
     public abstract string Action { get; }
 }
 
@@ -27,7 +31,7 @@ public abstract record HookResponse
 public sealed record ApproveResponse : HookResponse
 {
     /// <inheritdoc/>
-    [JsonPropertyName("action")]
+    [JsonIgnore]
     public override string Action => "approve";
 }
 
@@ -38,7 +42,7 @@ public sealed record ApproveResponse : HookResponse
 public sealed record BlockResponse : HookResponse
 {
     /// <inheritdoc/>
-    [JsonPropertyName("action")]
+    [JsonIgnore]
     public override string Action => "block";
 
     /// <summary>
@@ -57,7 +61,7 @@ public sealed record BlockResponse : HookResponse
 public sealed record ModifyResponse : HookResponse
 {
     /// <inheritdoc/>
-    [JsonPropertyName("action")]
+    [JsonIgnore]
     public override string Action => "modify";
 
     /// <summary>
