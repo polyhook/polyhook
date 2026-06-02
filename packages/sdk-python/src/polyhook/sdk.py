@@ -16,13 +16,27 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
-from .generated_models import HookEvent, HookResponse, CallerKind, HookEventName
+from .generated_models import HookResponse, CallerKind
+
+
+@dataclass
+class HookEvent:
+    """Normalised hook event with Python-conventional snake_case field names."""
+    event: str
+    tool: Optional[str]
+    input: Optional[dict[str, Any]]
+    output: Optional[dict[str, Any]]
+    session_id: str
+    agent_id: Optional[str]
+    caller: str
+
 
 # Re-export for backwards compatibility
-__all__ = ["HookEvent", "HookResponse", "CallerKind", "HookEventName"]
+__all__ = ["HookEvent", "HookResponse", "CallerKind"]
 
 # ---------------------------------------------------------------------------
 # Convenience constructors

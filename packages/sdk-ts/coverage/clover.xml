@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1780359337722" clover="3.2.0">
-  <project timestamp="1780359337722" name="All files">
+<coverage generated="1780359776258" clover="3.2.0">
+  <project timestamp="1780359776258" name="All files">
     <metrics statements="78" coveredstatements="78" conditionals="25" coveredconditionals="25" methods="10" coveredmethods="10" elements="113" coveredelements="113" complexity="0" loc="78" ncloc="78" packages="1" files="1" classes="1"/>
     <file name="index.ts" path="/Users/ofek/dev/git/github/tupe12334/polyhook/packages/sdk-ts/src/index.ts">
       <metrics statements="78" coveredstatements="78" conditionals="25" coveredconditionals="25" methods="10" coveredmethods="10"/>

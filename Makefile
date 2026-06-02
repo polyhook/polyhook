@@ -212,7 +212,7 @@ coverage/go:
 ## coverage/python: Python SDK coverage via pytest-cov
 coverage/python:
 	cd packages/sdk-python && \
-	  uv run pytest --cov=polyhook --cov-report=term-missing \
+	  uv run --extra dev pytest --cov=polyhook --cov-report=term-missing \
 	    --cov-fail-under=100 \
 	    --cov-config=.coveragerc
 
