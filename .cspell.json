@@ -19,7 +19,10 @@
     "**/obj/**",
     "**/*.egg-info/**",
     "**/.pytest_cache/**",
-    "**/coverage/**"
+    "**/coverage/**",
+    "**/bin/**",
+    "**/*.deps.json",
+    "**/*.runtimeconfig.json"
   ],
   "words": [
     "Polyhook",
