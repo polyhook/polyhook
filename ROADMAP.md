@@ -27,6 +27,10 @@ Core architecture is stable. WASM module handles detection, normalization, and s
 - Typed `input` fields per tool (vs `Record<string, unknown>`)
 - First-class `modify` response support in all SDKs
 
+### Registry publishing
+
+- Add `NUGET_API_KEY` secret to enable NuGet (`Polyhook.Sdk`) publishing in the release workflow
+
 ### Developer experience
 
 - `polyhook check` — CLI that prints the detected caller and parsed event for a given stdin payload; aids hook debugging
