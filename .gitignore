@@ -5,8 +5,8 @@
 target/
 Cargo.lock
 
-# WASM build artifact (rebuilt via `make wasm`)
-polyhook.wasm
+# WASM build artifact at repo root (rebuilt via `make wasm`)
+/polyhook.wasm
 
 
 # Python
