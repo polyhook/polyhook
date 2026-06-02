@@ -83,10 +83,11 @@ jobs:
       - name: Publish polyhook (sdk-rust)
         run: |
           for i in 1 2 3 4 5; do
-            cargo publish -p polyhook --token ${{ secrets.CRATES_IO_TOKEN }} --allow-dirty && break
+            cargo publish -p polyhook --token ${{ secrets.CRATES_IO_TOKEN }} --allow-dirty && exit 0
             echo "Attempt $i failed — waiting 30s for polyhook-core to index…"
             sleep 30
           done
+          exit 1
 
   # ── PyPI (polyhook) ──────────────────────────────────────────────────────────
   # Required secret: PYPI_TOKEN
