@@ -75,11 +75,13 @@ func defaultWASMLoader() ([]byte, error) {
 		return wasmBytes, nil
 	}
 
-	// 2. Fall back to reading polyhook.wasm from the same directory as the
-	//    running executable (useful during development / testing).
+	// 2. Fall back to reading polyhook.wasm from several well-known locations
+	//    (useful during development / testing without an embedded binary).
 	paths := []string{
 		"polyhook.wasm",
 		"packages/sdk-go/polyhook.wasm",
+		"../sdk-ts/polyhook.wasm",
+		"../../target/wasm32-unknown-unknown/release/polyhook_core.wasm",
 	}
 	for _, p := range paths {
 		data, err := os.ReadFile(p)

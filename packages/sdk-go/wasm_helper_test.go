@@ -43,9 +43,10 @@ func usePassthroughWASM() {
 	polyhook.SetTestSerializer(passthroughSerialize)
 }
 
-// resetRuntime tears down the Go shims and the runtime singleton so
-// subsequent tests start fresh.
+// resetRuntime tears down the Go shims, restores the default wasmLoader, and
+// resets the runtime singleton so subsequent tests start fresh.
 func resetRuntime() {
 	polyhook.ClearTestHooks()
+	polyhook.RestoreWasmLoader()
 	polyhook.ResetRuntime()
 }

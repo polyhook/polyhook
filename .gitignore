@@ -38,3 +38,6 @@ schema.rs
 
 # Generated types are committed (available without codegen toolchain)
 # Regenerate with: make schema
+
+# Test coverage artifacts
+packages/sdk-go/coverage.out

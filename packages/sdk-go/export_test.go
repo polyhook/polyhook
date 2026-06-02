@@ -3,16 +3,15 @@ package polyhook
 import "sync"
 
 // defaultLoader is the wasmLoader value at package init time; used by
-// ResetRuntime to restore state between tests.
+// resetRuntime (in wasm_helper_test.go) to restore clean state between tests.
 var defaultLoader = wasmLoader
 
 // Exported only for testing.
 var (
-	// ResetRuntime tears down the singleton WASM runtime and restores the
-	// default wasmLoader, so the next call to getRuntime() re-initialises
-	// cleanly.
+	// ResetRuntime tears down the singleton WASM runtime so the next call to
+	// getRuntime() will re-initialise it. Does NOT restore wasmLoader — call
+	// RestoreWasmLoader separately if needed.
 	ResetRuntime = func() {
-		wasmLoader = defaultLoader
 		runtimeOnce = sync.Once{}
 		runtime_ = nil
 		runtimeErr = nil
@@ -20,6 +19,9 @@ var (
 		lastCaller = ""
 		mu.Unlock()
 	}
+
+	// RestoreWasmLoader resets wasmLoader to the package-initialised default.
+	RestoreWasmLoader = func() { wasmLoader = defaultLoader }
 
 	// SetWasmLoader replaces the package-level wasmLoader function. The
 	// supplied fn is called by getRuntime() when it initialises the singleton.
@@ -35,4 +37,8 @@ var (
 
 	// ClearTestHooks removes both mocks so subsequent calls use the real WASM runtime.
 	ClearTestHooks = func() { testParser = nil; testSerializer = nil }
+
+	// SetWasmBytes sets the embedded-binary cache used by defaultWASMLoader.
+	// The loader returns these bytes immediately without reading from disk.
+	SetWasmBytes = func(b []byte) { wasmBytes = b }
 )
