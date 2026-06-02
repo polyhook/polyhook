@@ -40,7 +40,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
           cache: pnpm
           cache-dependency-path: packages/sdk-ts/pnpm-lock.yaml
       - uses: actions/download-artifact@v4
@@ -54,10 +53,12 @@ jobs:
         working-directory: packages/sdk-ts
       - run: pnpm build
         working-directory: packages/sdk-ts
-      - run: pnpm publish --no-git-checks --access public
+      - name: Publish
         working-directory: packages/sdk-ts
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+          pnpm publish --no-git-checks --access public
+          rm .npmrc
 
   # ── crates.io (polyhook-core + polyhook) ────────────────────────────────────
   # Required secret: CRATES_IO_TOKEN
