@@ -40,6 +40,10 @@
           "description": "Normalized tool name (e.g. 'bash', 'write_file', 'read_file'). Present for tool:before and tool:after events; null for all other event kinds.",
           "type": ["string", "null"]
         },
+        "bin": {
+          "description": "The executable being invoked. Only present for bash tool events where input.command is available. Extracted as the first non-env-assignment token of the command string (e.g. 'git' from 'GIT_DIR=.git git commit'). Null for all other tool kinds.",
+          "type": ["string", "null"]
+        },
         "input": {
           "description": "Tool input arguments as a free-form object. Present for tool:before events; null otherwise. The shape depends on the specific tool being called.",
           "oneOf": [

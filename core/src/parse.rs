@@ -29,9 +29,13 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     let session_id = extract_session_id(&val);
     let agent_id = extract_agent_id(&val);
 
+    // --- bin (bash tool only) ---
+    let bin = extract_bin(tool.as_deref(), input.as_ref());
+
     Ok(HookEvent {
         event,
         tool,
+        bin,
         input,
         output,
         session_id,
@@ -162,6 +166,34 @@ fn extract_agent_id(val: &serde_json::Value) -> Option<String> {
         }
     }
     None
+}
+
+pub(crate) fn is_env_assignment(token: &str) -> bool {
+    let Some(eq_pos) = token.find('=') else {
+        return false;
+    };
+    let key = &token[..eq_pos];
+    !key.is_empty()
+        && key
+            .chars()
+            .next()
+            .map_or(false, |c| c.is_ascii_alphabetic() || c == '_')
+        && key
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
+pub(crate) fn extract_bin(
+    tool: Option<&str>,
+    input: Option<&serde_json::Map<String, serde_json::Value>>,
+) -> Option<String> {
+    if tool? != "bash" {
+        return None;
+    }
+    let cmd = input?.get("command")?.as_str()?;
+    cmd.split_whitespace()
+        .find(|t| !is_env_assignment(t))
+        .map(|s| s.to_owned())
 }
 
 // ---------------------------------------------------------------------------
