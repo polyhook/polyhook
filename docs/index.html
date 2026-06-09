@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>polyhook — Write AI coding agent hooks once. Run them everywhere.</title>
+  <meta name="description" content="Multi-language SDK for AI coding agent hooks. Write once, run on Claude Code, Cursor, Windsurf, Cline, Amp, Gemini CLI, and more." />
+  <meta property="og:title" content="polyhook" />
+  <meta property="og:description" content="Write AI coding agent hooks once. Run them everywhere." />
+  <meta property="og:type" content="website" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:             #050a2c;
+      --surface:        #070d30;
+      --card:           #0c1445;
+      --card-hover:     #101a55;
+      --border:         #182050;
+      --border-bright:  #2a3880;
+      --accent:         #71c3e8;
+      --accent-dim:     #4a90b8;
+      --accent-bright:  #b0ddf5;
+      --text:           #dce8f2;
+      --text-muted:     #7090a8;
+      --text-dim:       #3a5870;
+      --code-bg:        #030820;
+      --green:          #4ade80;
+      --amber:          #fbbf24;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-bright); }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      background: rgba(113,195,232,0.08);
+      border: 1px solid rgba(113,195,232,0.15);
+      border-radius: 3px;
+      padding: 1px 5px;
+      color: var(--accent-bright);
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(5, 10, 44, 0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      height: 58px;
+      gap: 2rem;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: var(--text);
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .nav-logo svg { width: 26px; height: 26px; border-radius: 4px; }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.4rem;
+      margin-left: auto;
+      font-size: 0.88rem;
+    }
+
+    .nav-links a { color: var(--text-muted); }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      background: var(--accent);
+      color: var(--bg) !important;
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .nav-cta:hover { background: var(--accent-bright) !important; color: var(--bg) !important; }
+
+    @media (max-width: 640px) {
+      .nav-links a:not(.nav-cta):not([href*="github"]) { display: none; }
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      padding: 6rem 2rem 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(113,195,232,0.07) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 90% 70% at 50% 100%, transparent 30%, var(--bg) 75%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 5vw, 3.8rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.025em;
+      margin-bottom: 1.25rem;
+    }
+
+    h1 .line1 { color: var(--accent-bright); display: block; }
+    h1 .line2 { color: var(--text); display: block; }
+
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 560px;
+      margin-bottom: 3rem;
+      line-height: 1.75;
+    }
+
+    /* comparison */
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 720px) {
+      .comparison { grid-template-columns: 1fr; }
+    }
+
+    .cpanel {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--code-bg);
+    }
+
+    .cpanel-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      background: rgba(255,255,255,0.025);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.76rem;
+      font-family: var(--mono);
+      color: var(--text-muted);
+    }
+
+    .cpanel-head.bad  { border-bottom-color: rgba(248,113,113,0.25); }
+    .cpanel-head.good { border-bottom-color: rgba(74,222,128,0.25); }
+
+    .ind {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .ind.red   { background: #f87171; }
+    .ind.green { background: var(--green); }
+
+    .cpanel pre {
+      padding: 1.2rem 1.4rem;
+      font-family: var(--mono);
+      font-size: 0.77rem;
+      line-height: 1.75;
+      overflow-x: auto;
+      color: var(--text);
+    }
+
+    /* syntax highlight helpers */
+    .ck  { color: #7ab4d4; }   /* keyword */
+    .cs  { color: #6aa64f; }   /* string */
+    .cf  { color: #d4a96a; }   /* function */
+    .ct  { color: #4ec9b0; }   /* type */
+    .cc  { color: var(--text-dim); }   /* comment */
+    .cm  { color: var(--text-muted); } /* muted label */
+    .cg  { color: var(--green); }
+    .ca  { color: var(--accent-dim); }
+    .cp  { color: #9090a8; }   /* punctuation */
+
+    /* ─── SECTIONS ─── */
+    section { padding: 5rem 2rem; }
+
+    .section-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .label {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 0.6rem;
+    }
+
+    h2 {
+      font-size: clamp(1.75rem, 3vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-sub {
+      font-size: 0.98rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      max-width: 520px;
+      line-height: 1.7;
+    }
+
+    .alt-section {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ─── HOW IT WORKS ─── */
+    .flow-wrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 780px) {
+      .flow-wrap { grid-template-columns: 1fr; }
+    }
+
+    .flow-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      font-family: var(--mono);
+      font-size: 0.83rem;
+      line-height: 2.1;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .fa { color: var(--accent); }       /* arrow */
+    .fw { color: var(--accent); }       /* wasm fn */
+    .fu { color: var(--green); }        /* user code */
+    .fd { color: var(--text-dim); }     /* dim */
+    .fn { color: var(--text-muted); font-size: 0.75rem; } /* note */
+
+    .responses {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      min-width: 280px;
+    }
+
+    .resp-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+    }
+
+    .resp-sig {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--accent-bright);
+      margin-bottom: 0.35rem;
+    }
+
+    .resp-sig .cf { color: #d4a96a; }
+    .resp-sig .cs { color: #6aa64f; }
+    .resp-sig .cp { color: #9090a8; }
+
+    .resp-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* ─── SDK TABS ─── */
+    .sdk-tabs {
+      display: flex;
+      gap: 2px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .sdk-tab {
+      padding: 8px 20px;
+      font-size: 0.85rem;
+      font-family: var(--mono);
+      color: var(--text-muted);
+      cursor: pointer;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      white-space: nowrap;
+      border-radius: 4px 4px 0 0;
+      transition: color 0.12s, border-color 0.12s, background 0.12s;
+    }
+
+    .sdk-tab:hover { color: var(--text); }
+
+    .sdk-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: rgba(113,195,232,0.06);
+    }
+
+    .sdk-panel { display: none; }
+
+    .sdk-panel.active {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .sdk-panel.active > * { min-width: 0; }
+
+    @media (max-width: 680px) {
+      .sdk-panel.active { grid-template-columns: 1fr; }
+    }
+
+    .sub-label {
+      font-size: 0.72rem;
+      font-family: var(--mono);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 7px;
+    }
+
+    .install-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 13px;
+      font-family: var(--mono);
+      font-size: 0.83rem;
+      color: var(--text);
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .prompt { color: var(--text-dim); }
+
+    .copy-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-dim);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-family: var(--mono);
+      transition: color 0.12s, background 0.12s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { color: var(--accent); background: rgba(113,195,232,0.08); }
+    .copy-btn.ok { color: var(--green); }
+
+    .sdk-links {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .sdk-links a {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sdk-links a:hover { color: var(--accent); }
+    .sdk-links a::before { content: '→'; color: var(--accent-dim); font-size: 0.78rem; }
+
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .code-block-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      background: rgba(255,255,255,0.025);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.74rem;
+      font-family: var(--mono);
+      color: var(--text-dim);
+    }
+
+    .code-block pre {
+      padding: 1.2rem 1.4rem;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.8;
+      overflow-x: auto;
+      color: var(--text);
+    }
+
+    /* ─── TOOLS ─── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.9rem;
+    }
+
+    .tool-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 1rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.15s, background 0.15s;
+      text-decoration: none;
+    }
+
+    .tool-card:hover {
+      border-color: var(--border-bright);
+      background: var(--card-hover);
+      color: var(--text);
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.on  { background: var(--green);  box-shadow: 0 0 5px var(--green); }
+    .dot.wip { background: var(--amber); box-shadow: 0 0 5px var(--amber); }
+    .dot.off { background: var(--text-dim); }
+
+    .tool-name {
+      font-size: 0.88rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .tool-badge {
+      margin-left: auto;
+      font-size: 0.68rem;
+      font-family: var(--mono);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .tool-badge.on  { background: rgba(74,222,128,0.1);  color: var(--green); }
+    .tool-badge.wip { background: rgba(251,191,36,0.1);  color: var(--amber); }
+    .tool-badge.off { background: rgba(255,255,255,0.04); color: var(--text-dim); }
+
+    /* ─── PRINCIPLES ─── */
+    .principles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.1rem;
+    }
+
+    .pr-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+    }
+
+    .pr-icon {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .pr-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .pr-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* ─── TYPES STRIP ─── */
+    .types-strip {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 2rem;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.9;
+      overflow-x: auto;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+    }
+
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+      font-size: 0.88rem;
+    }
+
+    .footer-logo svg { width: 18px; height: 18px; border-radius: 3px; }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      margin-left: auto;
+      font-size: 0.83rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a { color: var(--text-dim); }
+    .footer-links a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ NAV ══════════════════ -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+        <rect width="1024" height="1024" fill="#050a2c"/>
+        <g transform="translate(0,1024) scale(1,-1)" fill="#71c3e8">
+          <path d="M622 872 c-45 -6 -83 -25 -114 -57 -14 -13 -20 -21 -30 -37 -18 -30
+-28 -64 -31 -104 -1 -8 -1 -77 -1 -176 0 -176 0 -169 -6 -187 -3 -12 -6 -18
+-13 -28 -7 -11 -16 -20 -27 -27 -10 -7 -19 -10 -33 -13 -36 -7 -73 6 -95 34
+-20 24 -28 59 -24 92 1 7 2 13 3 13 0 1 3 -1 6 -4 11 -10 21 -17 31 -21 8 -5
+21 -9 22 -9 0 0 -2 4 -5 9 -13 23 -23 50 -26 75 -3 19 -2 48 3 68 2 7 6 22 10
+30 0 2 0 2 -4 -1 -34 -25 -62 -55 -81 -87 -17 -27 -27 -57 -32 -86 -2 -18 -1
+-47 2 -64 4 -18 8 -29 16 -44 9 -19 18 -31 33 -46 27 -28 62 -44 101 -50 74
+-9 151 27 192 90 15 23 25 50 29 75 1 5 2 11 3 13 0 2 1 82 1 178 l1 175 2 9
+c6 19 13 32 25 46 22 23 54 35 84 31 25 -3 45 -12 62 -30 18 -18 27 -39 30
+-67 3 -32 -9 -66 -31 -88 -32 -31 -75 -39 -114 -20 -5 3 -12 7 -16 9 l-6 5 0
+-58 0 -58 8 -2 c23 -7 36 -9 59 -9 64 0 123 32 159 86 18 27 30 61 34 95 2 14
+2 45 0 58 -3 23 -10 51 -19 70 -25 54 -76 94 -134 108 -21 5 -52 6 -74 4z"/>
+        </g>
+      </svg>
+      polyhook
+    </a>
+    <div class="nav-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#sdks">SDKs</a>
+      <a href="#tools">Tools</a>
+      <a href="https://github.com/polyhook/polyhook" target="_blank">GitHub</a>
+      <a class="nav-cta" href="#sdks">Get started</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<section class="hero">
+  <div class="hero-inner">
+    <h1>
+      <span class="line1">Write AI coding agent hooks once.</span>
+      <span class="line2">Run them everywhere.</span>
+    </h1>
+
+    <p class="hero-sub">
+      polyhook detects which AI tool invoked your binary, deserializes the event
+      into a normalized struct, and serializes your response back &mdash; in whatever
+      format that tool expects.
+    </p>
+
+    <div class="comparison">
+      <!-- BEFORE -->
+      <div class="cpanel">
+        <div class="cpanel-head bad">
+          <span class="ind red"></span>
+          Without polyhook &mdash; different format per tool
+        </div>
+        <pre><span class="cc">// Claude Code</span>
+<span class="cm">stdin:</span>  <span class="cs">"tool_name"</span>: <span class="cs">"Bash"</span>,
+        <span class="cs">"tool_input"</span>: { <span class="cs">"command"</span>: <span class="cs">"..."</span> }
+<span class="cm">stdout:</span> <span class="cs">"decision"</span>: <span class="cs">"block"</span>
+
+<span class="cc">// Cursor</span>
+<span class="cm">stdin:</span>  <span class="cs">"type"</span>: <span class="cs">"BeforeToolCall"</span>,
+        <span class="cs">"toolCall"</span>: { <span class="cs">"name"</span>: <span class="cs">"run_terminal_cmd"</span> }
+<span class="cm">stdout:</span> <span class="cs">"action"</span>: <span class="cs">"deny"</span>
+
+<span class="cc">// Windsurf</span>
+<span class="cm">stdin:</span>  <span class="cs">"event"</span>: <span class="cs">"pre_tool"</span>,
+        <span class="cs">"tool"</span>: <span class="cs">"run_command"</span>
+<span class="cm">stdout:</span> <span class="cs">"allow"</span>: <span class="ck">false</span>
+
+<span class="cc">→ write a parser + serializer for each tool</span></pre>
+      </div>
+
+      <!-- AFTER -->
+      <div class="cpanel">
+        <div class="cpanel-head good">
+          <span class="ind green"></span>
+          With polyhook &mdash; one hook, every tool
+        </div>
+        <pre><span class="ck">import</span> <span class="cp">{</span> <span class="cf">read</span><span class="cp">,</span> <span class="cf">respond</span><span class="cp">,</span> <span class="cf">block</span><span class="cp">,</span> <span class="cf">approve</span> <span class="cp">}</span>
+  <span class="ck">from</span> <span class="cs">"@polyhook/sdk"</span><span class="cp">;</span>
+
+<span class="cc">// normalized HookEvent — any caller</span>
+<span class="ck">const</span> event <span class="cp">=</span> <span class="ck">await</span> <span class="cf">read</span><span class="cp">();</span>
+
+<span class="ck">if</span> <span class="cp">(</span>
+  event<span class="cp">.</span>tool <span class="cp">===</span> <span class="cs">"bash"</span> <span class="cp">&&</span>
+  <span class="cp">/</span><span class="cs">rm\s+-rf</span><span class="cp">/.</span><span class="cf">test</span><span class="cp">(</span>event<span class="cp">.</span>input<span class="cp">?.</span>command <span class="cp">??</span> <span class="cs">""</span><span class="cp">)</span>
+<span class="cp">)</span> <span class="cp">{</span>
+  <span class="ck">await</span> <span class="cf">respond</span><span class="cp">(</span><span class="cf">block</span><span class="cp">(</span><span class="cs">"Blocked destructive command"</span><span class="cp">));</span>
+<span class="cp">}</span> <span class="ck">else</span> <span class="cp">{</span>
+  <span class="ck">await</span> <span class="cf">respond</span><span class="cp">(</span><span class="cf">approve</span><span class="cp">());</span>
+<span class="cp">}</span>
+
+<span class="cg">// runs unchanged on Claude Code, Cursor,</span>
+<span class="cg">// Windsurf, Cline, Amp, Gemini CLI</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ HOW IT WORKS ══════════════════ -->
+<section class="alt-section" id="how-it-works">
+  <div class="section-inner">
+    <div class="label">Architecture</div>
+    <h2>One WASM core. Every language.</h2>
+    <p class="section-sub">
+      Rust compiled to WebAssembly handles all detection, normalization, and serialization.
+      Each language SDK is a thin shim — no logic reimplemented per language, no divergence possible.
+    </p>
+
+    <div class="flow-wrap">
+      <div>
+        <div class="flow-diagram"><span class="fd">AI tool</span>  <span class="fa">──stdin──▶</span>  your binary
+                     │
+                <span class="fw">polyhook.read()</span>    <span class="fn">← WASM: detect caller, normalize event</span>
+                     │
+                <span class="fu">your hook logic</span>    <span class="fn">← tool-agnostic, any language</span>
+                     │
+                <span class="fw">polyhook.respond()</span> <span class="fn">← WASM: serialize to caller's format</span>
+                     │
+<span class="fd">AI tool</span>  <span class="fa">◀─stdout──</span>  your binary</div>
+
+        <br>
+
+        <div class="types-strip"><span class="ca">interface</span> <span class="ct">HookEvent</span> <span class="cp">{</span>
+  event<span class="cp">:</span>     <span class="cs">"tool:before"</span> <span class="cp">|</span> <span class="cs">"tool:after"</span> <span class="cp">|</span> <span class="cs">"session:start"</span> <span class="cp">| ...</span>
+  tool<span class="cp">?:</span>     <span class="ct">string</span>                  <span class="cc">// "bash", "write_file", "web_search", ...</span>
+  input<span class="cp">?:</span>    <span class="ct">Record</span><span class="cp">&lt;</span><span class="ct">string</span><span class="cp">,</span> <span class="ct">unknown</span><span class="cp">&gt;</span>  <span class="cc">// tool:before only</span>
+  output<span class="cp">?:</span>   <span class="ct">Record</span><span class="cp">&lt;</span><span class="ct">string</span><span class="cp">,</span> <span class="ct">unknown</span><span class="cp">&gt;</span>  <span class="cc">// tool:after only</span>
+  caller<span class="cp">:</span>    <span class="cs">"claude-code"</span> <span class="cp">|</span> <span class="cs">"cursor"</span> <span class="cp">|</span> <span class="cs">"windsurf"</span> <span class="cp">|</span> <span class="cs">"cline"</span> <span class="cp">|</span> <span class="cs">"amp"</span> <span class="cp">| ...</span>
+  sessionId<span class="cp">:</span> <span class="ct">string</span>
+<span class="cp">}</span></div>
+      </div>
+
+      <div class="responses">
+        <div class="sub-label" style="margin-bottom:0.4rem">Three response actions</div>
+
+        <div class="resp-card">
+          <div class="resp-sig"><span class="cf">approve</span><span class="cp">()</span></div>
+          <div class="resp-desc">Proceed with the operation unchanged.</div>
+        </div>
+
+        <div class="resp-card">
+          <div class="resp-sig"><span class="cf">block</span><span class="cp">(</span><span class="cs">"reason"</span><span class="cp">)</span></div>
+          <div class="resp-desc">Abort the operation. Your message is surfaced to the user.</div>
+        </div>
+
+        <div class="resp-card">
+          <div class="resp-sig"><span class="cf">modify</span><span class="cp">({</span> <span class="cs">command</span><span class="cp">:</span> <span class="cs">"safe"</span> <span class="cp">})</span></div>
+          <div class="resp-desc">Execute with a different input than the AI tool provided.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ SDKs ══════════════════ -->
+<section id="sdks">
+  <div class="section-inner">
+    <div class="label">Installation</div>
+    <h2>Pick your language.</h2>
+    <p class="section-sub">
+      All SDKs expose the same two functions and wrap the same WASM binary &mdash;
+      behavior is identical across every runtime.
+    </p>
+
+    <div class="sdk-tabs">
+      <button class="sdk-tab active" data-tab="ts">TypeScript</button>
+      <button class="sdk-tab" data-tab="python">Python</button>
+      <button class="sdk-tab" data-tab="go">Go</button>
+      <button class="sdk-tab" data-tab="rust">Rust</button>
+      <button class="sdk-tab" data-tab="dotnet">C# / .NET</button>
+    </div>
+
+    <!-- TypeScript -->
+    <div class="sdk-panel active" id="panel-ts">
+      <div>
+        <div class="sub-label">Install</div>
+        <div class="install-line">
+          <span class="prompt">$</span>
+          <span>npm install @polyhook/sdk</span>
+          <button class="copy-btn" data-copy="npm install @polyhook/sdk">copy</button>
+        </div>
+        <div class="sdk-links">
+          <a href="https://github.com/polyhook/polyhook/tree/main/packages/sdk-ts/examples" target="_blank">Examples</a>
+          <a href="https://www.npmjs.com/package/@polyhook/sdk" target="_blank">npm &rarr; @polyhook/sdk</a>
+          <a href="../FAQ.md">FAQ</a>
+        </div>
+      </div>
+      <div>
+        <div class="sub-label">Block destructive bash commands — hook.ts</div>
+        <div class="code-block">
+          <pre><span class="ck">import</span> <span class="cp">{</span> <span class="cf">read</span><span class="cp">,</span> <span class="cf">respond</span><span class="cp">,</span> <span class="cf">block</span><span class="cp">,</span> <span class="cf">approve</span> <span class="cp">}</span> <span class="ck">from</span> <span class="cs">"@polyhook/sdk"</span><span class="cp">;</span>
+
+<span class="ck">const</span> event <span class="cp">=</span> <span class="ck">await</span> <span class="cf">read</span><span class="cp">();</span>
+
+<span class="ck">if</span> <span class="cp">(</span>event<span class="cp">.</span>tool <span class="cp">===</span> <span class="cs">"bash"</span> <span class="cp">&&</span> <span class="cp">/</span><span class="cs">rm\s+-rf</span><span class="cp">/.</span><span class="cf">test</span><span class="cp">(</span>event<span class="cp">.</span>input<span class="cp">?.</span>command <span class="cp">??</span> <span class="cs">""</span><span class="cp">))</span> <span class="cp">{</span>
+  <span class="ck">await</span> <span class="cf">respond</span><span class="cp">(</span><span class="cf">block</span><span class="cp">(</span><span class="cs">"Refusing to delete from root"</span><span class="cp">));</span>
+<span class="cp">}</span> <span class="ck">else</span> <span class="cp">{</span>
+  <span class="ck">await</span> <span class="cf">respond</span><span class="cp">(</span><span class="cf">approve</span><span class="cp">());</span>
+<span class="cp">}</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Python -->
+    <div class="sdk-panel" id="panel-python">
+      <div>
+        <div class="sub-label">Install</div>
+        <div class="install-line">
+          <span class="prompt">$</span>
+          <span>pip install polyhook</span>
+          <button class="copy-btn" data-copy="pip install polyhook">copy</button>
+        </div>
+        <div class="sdk-links">
+          <a href="https://github.com/polyhook/polyhook/tree/main/packages/sdk-python/examples" target="_blank">Examples</a>
+          <a href="https://pypi.org/project/polyhook" target="_blank">PyPI &rarr; polyhook</a>
+          <a href="../FAQ.md">FAQ</a>
+        </div>
+      </div>
+      <div>
+        <div class="sub-label">Block destructive bash commands — hook.py</div>
+        <div class="code-block">
+          <pre><span class="ck">import</span> <span class="cf">re</span><span class="cp">,</span> <span class="cf">polyhook</span>
+
+event <span class="cp">=</span> <span class="cf">polyhook</span><span class="cp">.</span><span class="cf">read</span><span class="cp">()</span>
+
+<span class="ck">if</span> event<span class="cp">.</span>tool <span class="cp">==</span> <span class="cs">"bash"</span> <span class="ck">and</span> <span class="cf">re</span><span class="cp">.</span><span class="cf">search</span><span class="cp">(</span>
+    <span class="cs">r"rm\s+-rf"</span><span class="cp">,</span> <span class="cp">(</span>event<span class="cp">.</span>input <span class="ck">or</span> <span class="cp">{}).</span><span class="cf">get</span><span class="cp">(</span><span class="cs">"command"</span><span class="cp">,</span> <span class="cs">""</span><span class="cp">)</span>
+<span class="cp">):</span>
+    <span class="cf">polyhook</span><span class="cp">.</span><span class="cf">respond</span><span class="cp">(</span><span class="cf">polyhook</span><span class="cp">.</span><span class="cf">block</span><span class="cp">(</span><span class="cs">"Refusing to delete from root"</span><span class="cp">))</span>
+<span class="ck">else</span><span class="cp">:</span>
+    <span class="cf">polyhook</span><span class="cp">.</span><span class="cf">respond</span><span class="cp">(</span><span class="cf">polyhook</span><span class="cp">.</span><span class="cf">approve</span><span class="cp">())</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Go -->
+    <div class="sdk-panel" id="panel-go">
+      <div>
+        <div class="sub-label">Install</div>
+        <div class="install-line">
+          <span class="prompt">$</span>
+          <span style="font-size:0.75rem">go get github.com/polyhook/polyhook/packages/sdk-go</span>
+          <button class="copy-btn" data-copy="go get github.com/polyhook/polyhook/packages/sdk-go">copy</button>
+        </div>
+        <div class="sdk-links">
+          <a href="https://github.com/polyhook/polyhook/tree/main/packages/sdk-go/examples" target="_blank">Examples</a>
+          <a href="https://pkg.go.dev/github.com/polyhook/polyhook/packages/sdk-go" target="_blank">pkg.go.dev</a>
+          <a href="../FAQ.md">FAQ</a>
+        </div>
+      </div>
+      <div>
+        <div class="sub-label">Block destructive bash commands — hook.go</div>
+        <div class="code-block">
+          <pre>event<span class="cp">,</span> _ <span class="cp">:=</span> <span class="cf">polyhook</span><span class="cp">.</span><span class="cf">Read</span><span class="cp">()</span>
+
+cmd <span class="cp">:=</span> <span class="cs">""</span>
+<span class="ck">if</span> event<span class="cp">.</span>Input <span class="cp">!=</span> <span class="ck">nil</span> <span class="cp">{</span>
+    <span class="ck">if</span> v<span class="cp">,</span> ok <span class="cp">:=</span> event<span class="cp">.</span>Input<span class="cp">[</span><span class="cs">"command"</span><span class="cp">].(</span><span class="ct">string</span><span class="cp">);</span> ok <span class="cp">{</span>
+        cmd <span class="cp">=</span> v
+    <span class="cp">}</span>
+<span class="cp">}</span>
+
+<span class="ck">if</span> event<span class="cp">.</span>Tool <span class="cp">==</span> <span class="cs">"bash"</span> <span class="cp">&&</span> <span class="cf">strings</span><span class="cp">.</span><span class="cf">Contains</span><span class="cp">(</span>cmd<span class="cp">,</span> <span class="cs">"rm -rf"</span><span class="cp">) {</span>
+    <span class="cf">polyhook</span><span class="cp">.</span><span class="cf">Respond</span><span class="cp">(</span><span class="cf">polyhook</span><span class="cp">.</span><span class="cf">Block</span><span class="cp">(</span><span class="cs">"Refusing to delete from root"</span><span class="cp">))</span>
+<span class="cp">}</span> <span class="ck">else</span> <span class="cp">{</span>
+    <span class="cf">polyhook</span><span class="cp">.</span><span class="cf">Respond</span><span class="cp">(</span><span class="cf">polyhook</span><span class="cp">.</span><span class="cf">Approve</span><span class="cp">())</span>
+<span class="cp">}</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rust -->
+    <div class="sdk-panel" id="panel-rust">
+      <div>
+        <div class="sub-label">Install</div>
+        <div class="install-line">
+          <span class="prompt">$</span>
+          <span>cargo add polyhook</span>
+          <button class="copy-btn" data-copy="cargo add polyhook">copy</button>
+        </div>
+        <div class="sdk-links">
+          <a href="https://github.com/polyhook/polyhook/tree/main/packages/sdk-rust/examples" target="_blank">Examples</a>
+          <a href="https://crates.io/crates/polyhook" target="_blank">crates.io &rarr; polyhook</a>
+          <a href="../FAQ.md">FAQ</a>
+        </div>
+        <br>
+        <div style="font-size:0.78rem;color:var(--accent);font-family:var(--mono);background:rgba(113,195,232,0.07);border:1px solid rgba(113,195,232,0.15);border-radius:6px;padding:8px 12px;">
+          Native link — no WASM overhead
+        </div>
+      </div>
+      <div>
+        <div class="sub-label">Block destructive bash commands — hook.rs</div>
+        <div class="code-block">
+          <pre><span class="ck">let</span> event <span class="cp">=</span> <span class="cf">polyhook</span><span class="cp">::</span><span class="cf">read</span><span class="cp">()?;</span>
+
+<span class="ck">let</span> cmd <span class="cp">=</span> event<span class="cp">.</span>input
+    <span class="cp">.</span><span class="cf">as_ref</span><span class="cp">()</span>
+    <span class="cp">.</span><span class="cf">and_then</span><span class="cp">(|</span>i<span class="cp">|</span> i<span class="cp">.</span><span class="cf">get</span><span class="cp">(</span><span class="cs">"command"</span><span class="cp">))</span>
+    <span class="cp">.</span><span class="cf">and_then</span><span class="cp">(|</span>v<span class="cp">|</span> v<span class="cp">.</span><span class="cf">as_str</span><span class="cp">())</span>
+    <span class="cp">.</span><span class="cf">unwrap_or_default</span><span class="cp">();</span>
+
+<span class="ck">if</span> event<span class="cp">.</span>tool<span class="cp">.</span><span class="cf">as_deref</span><span class="cp">()</span> <span class="cp">==</span> <span class="ct">Some</span><span class="cp">(</span><span class="cs">"bash"</span><span class="cp">)</span> <span class="cp">&&</span> cmd<span class="cp">.</span><span class="cf">contains</span><span class="cp">(</span><span class="cs">"rm -rf"</span><span class="cp">) {</span>
+    <span class="cf">polyhook</span><span class="cp">::</span><span class="cf">respond</span><span class="cp">(&</span><span class="ct">HookResponse</span><span class="cp">::</span><span class="cf">block</span><span class="cp">(</span><span class="cs">"Refusing to delete from root"</span><span class="cp">))?;</span>
+<span class="cp">}</span> <span class="ck">else</span> <span class="cp">{</span>
+    <span class="cf">polyhook</span><span class="cp">::</span><span class="cf">respond</span><span class="cp">(&</span><span class="ct">HookResponse</span><span class="cp">::</span><span class="cf">approve</span><span class="cp">())?;</span>
+<span class="cp">}</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- C# -->
+    <div class="sdk-panel" id="panel-dotnet">
+      <div>
+        <div class="sub-label">Install</div>
+        <div class="install-line">
+          <span class="prompt">$</span>
+          <span>dotnet add package Polyhook.Sdk</span>
+          <button class="copy-btn" data-copy="dotnet add package Polyhook.Sdk">copy</button>
+        </div>
+        <div class="sdk-links">
+          <a href="https://github.com/polyhook/polyhook/tree/main/packages/sdk-dotnet/examples" target="_blank">Examples</a>
+          <a href="https://www.nuget.org/packages/Polyhook.Sdk" target="_blank">NuGet &rarr; Polyhook.Sdk</a>
+          <a href="../FAQ.md">FAQ</a>
+        </div>
+      </div>
+      <div>
+        <div class="sub-label">Block destructive bash commands — Hook.cs</div>
+        <div class="code-block">
+          <pre><span class="ck">var</span> evt <span class="cp">=</span> <span class="ck">await</span> <span class="cf">Polyhook</span><span class="cp">.</span><span class="cf">ReadAsync</span><span class="cp">();</span>
+
+<span class="ck">var</span> cmd <span class="cp">=</span> evt<span class="cp">.</span>Input<span class="cp">?.</span><span class="cf">GetValueOrDefault</span><span class="cp">(</span><span class="cs">"command"</span><span class="cp">)?.</span><span class="cf">ToString</span><span class="cp">()</span> <span class="cp">??</span> <span class="cs">""</span><span class="cp">;</span>
+
+<span class="ck">if</span> <span class="cp">(</span>evt<span class="cp">.</span>Tool <span class="cp">==</span> <span class="cs">"bash"</span> <span class="cp">&&</span> cmd<span class="cp">.</span><span class="cf">Contains</span><span class="cp">(</span><span class="cs">"rm -rf"</span><span class="cp">))</span>
+<span class="cp">{</span>
+    <span class="ck">await</span> <span class="cf">Polyhook</span><span class="cp">.</span><span class="cf">RespondAsync</span><span class="cp">(</span><span class="cf">Polyhook</span><span class="cp">.</span><span class="cf">Block</span><span class="cp">(</span><span class="cs">"Refusing to delete from root"</span><span class="cp">));</span>
+<span class="cp">}</span>
+<span class="ck">else</span>
+<span class="cp">{</span>
+    <span class="ck">await</span> <span class="cf">Polyhook</span><span class="cp">.</span><span class="cf">RespondAsync</span><span class="cp">(</span><span class="cf">Polyhook</span><span class="cp">.</span><span class="cf">Approve</span><span class="cp">());</span>
+<span class="cp">}</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ TOOLS ══════════════════ -->
+<section class="alt-section" id="tools">
+  <div class="section-inner">
+    <div class="label">Coverage</div>
+    <h2>Supported AI tools</h2>
+    <p class="section-sub">
+      Your hook binary runs unchanged on all supported callers. Unknown callers fall back
+      gracefully &mdash; <code>caller: "unknown"</code>, best-effort parse.
+    </p>
+
+    <div class="tools-grid">
+      <a class="tool-card" href="https://claude.ai/code" target="_blank">
+        <span class="dot on"></span>
+        <span class="tool-name">Claude Code</span>
+        <span class="tool-badge on">supported</span>
+      </a>
+      <a class="tool-card" href="https://cursor.com" target="_blank">
+        <span class="dot on"></span>
+        <span class="tool-name">Cursor</span>
+        <span class="tool-badge on">supported</span>
+      </a>
+      <a class="tool-card" href="https://windsurf.ai" target="_blank">
+        <span class="dot on"></span>
+        <span class="tool-name">Windsurf</span>
+        <span class="tool-badge on">supported</span>
+      </a>
+      <a class="tool-card" href="https://github.com/cline/cline" target="_blank">
+        <span class="dot on"></span>
+        <span class="tool-name">Cline</span>
+        <span class="tool-badge on">supported</span>
+      </a>
+      <a class="tool-card" href="https://ampcode.com" target="_blank">
+        <span class="dot on"></span>
+        <span class="tool-name">Amp</span>
+        <span class="tool-badge on">supported</span>
+      </a>
+      <a class="tool-card" href="https://github.com/google-gemini/gemini-cli" target="_blank">
+        <span class="dot on"></span>
+        <span class="tool-name">Gemini CLI</span>
+        <span class="tool-badge on">supported</span>
+      </a>
+      <a class="tool-card" href="https://continue.dev" target="_blank">
+        <span class="dot wip"></span>
+        <span class="tool-name">Continue</span>
+        <span class="tool-badge wip">in progress</span>
+      </a>
+      <a class="tool-card" href="https://aider.chat" target="_blank">
+        <span class="dot wip"></span>
+        <span class="tool-name">Aider</span>
+        <span class="tool-badge wip">in progress</span>
+      </a>
+      <a class="tool-card" href="https://github.com/features/copilot" target="_blank">
+        <span class="dot off"></span>
+        <span class="tool-name">GitHub Copilot</span>
+        <span class="tool-badge off">planned</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ PRINCIPLES ══════════════════ -->
+<section id="design">
+  <div class="section-inner">
+    <div class="label">Design</div>
+    <h2>Built on four constraints.</h2>
+    <p class="section-sub">
+      These aren't aspirational — they're enforced by the architecture.
+    </p>
+
+    <div class="principles-grid">
+      <div class="pr-card">
+        <span class="pr-icon">⬡</span>
+        <h3>One implementation</h3>
+        <p>All detection and serialization lives in <code>core</code>. Language SDKs are thin wrappers over the same WASM binary — divergence is structurally impossible.</p>
+      </div>
+      <div class="pr-card">
+        <span class="pr-icon">⚡</span>
+        <h3>Runtime only</h3>
+        <p>No code generation. polyhook runs inside your binary at hook invocation time. No build-step complexity, no generated files to maintain.</p>
+      </div>
+      <div class="pr-card">
+        <span class="pr-icon">◎</span>
+        <h3>Transparent fallback</h3>
+        <p>Unknown caller → <code>caller: "unknown"</code>, best-effort parse. Your hook keeps running — it does not crash on unrecognized tools.</p>
+      </div>
+      <div class="pr-card">
+        <span class="pr-icon">⬜</span>
+        <h3>Bring your own runtime</h3>
+        <p>Each SDK ships <code>polyhook.wasm</code> and a thin host binding. Swap the WASM runtime if your platform requires it. See <a href="../BINDINGS.md">BINDINGS.md</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+        <rect width="1024" height="1024" fill="#050a2c"/>
+        <g transform="translate(0,1024) scale(1,-1)" fill="#71c3e8">
+          <path d="M622 872 c-45 -6 -83 -25 -114 -57 -14 -13 -20 -21 -30 -37 -18 -30
+-28 -64 -31 -104 -1 -8 -1 -77 -1 -176 0 -176 0 -169 -6 -187 -3 -12 -6 -18
+-13 -28 -7 -11 -16 -20 -27 -27 -10 -7 -19 -10 -33 -13 -36 -7 -73 6 -95 34
+-20 24 -28 59 -24 92 1 7 2 13 3 13 0 1 3 -1 6 -4 11 -10 21 -17 31 -21 8 -5
+21 -9 22 -9 0 0 -2 4 -5 9 -13 23 -23 50 -26 75 -3 19 -2 48 3 68 2 7 6 22 10
+30 0 2 0 2 -4 -1 -34 -25 -62 -55 -81 -87 -17 -27 -27 -57 -32 -86 -2 -18 -1
+-47 2 -64 4 -18 8 -29 16 -44 9 -19 18 -31 33 -46 27 -28 62 -44 101 -50 74
+-9 151 27 192 90 15 23 25 50 29 75 1 5 2 11 3 13 0 2 1 82 1 178 l1 175 2 9
+c6 19 13 32 25 46 22 23 54 35 84 31 25 -3 45 -12 62 -30 18 -18 27 -39 30
+-67 3 -32 -9 -66 -31 -88 -32 -31 -75 -39 -114 -20 -5 3 -12 7 -16 9 l-6 5 0
+-58 0 -58 8 -2 c23 -7 36 -9 59 -9 64 0 123 32 159 86 18 27 30 61 34 95 2 14
+2 45 0 58 -3 23 -10 51 -19 70 -25 54 -76 94 -134 108 -21 5 -52 6 -74 4z"/>
+        </g>
+      </svg>
+      polyhook &middot; MIT License
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/polyhook/polyhook" target="_blank">GitHub</a>
+      <a href="../FAQ.md">FAQ</a>
+      <a href="../ROADMAP.md">Roadmap</a>
+      <a href="../CONTRIBUTING.md">Contributing</a>
+      <a href="../ARCHITECTURE.md">Architecture</a>
+      <a href="../BINDINGS.md">Bindings</a>
+      <a href="tool-names.md">Tool names</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // SDK tab switching
+  document.querySelectorAll('.sdk-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const id = tab.dataset.tab;
+      document.querySelectorAll('.sdk-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.sdk-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + id).classList.add('active');
+    });
+  });
+
+  // Copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(btn.dataset.copy).catch(() => {});
+      const orig = btn.textContent;
+      btn.textContent = 'copied!';
+      btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('ok'); }, 2000);
+    });
+  });
+</script>
+</body>
+</html>
