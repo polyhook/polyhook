@@ -11,8 +11,7 @@
  * This interface was referenced by `PolyhookSchema`'s JSON-Schema
  * via the `definition` "CallerKind".
  */
-export type CallerKind = "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "unknown";
-
+export type CallerKind = "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "unknown";
 /**
  * The response a hook handler returns to polyhook.wasm, which translates it into the format expected by the detected caller. Discriminated on the 'action' field.
  *
