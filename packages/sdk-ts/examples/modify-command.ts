@@ -1,4 +1,4 @@
-import { read, respond, modify, approve } from "@polyhook/sdk";
+import { read, respond, modify, approve } from "polyhook";
 
 const event = await read();
 

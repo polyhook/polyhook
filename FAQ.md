@@ -47,7 +47,7 @@ TypeScript/JavaScript, Rust, Go, C#/.NET, Python. All expose the same two functi
 ### TypeScript / JavaScript
 
 ```bash
-npm install @polyhook/sdk
+npm install polyhook
 ```
 
 ### Rust
@@ -82,7 +82,7 @@ pip install polyhook
 
 **TypeScript**
 ```typescript
-import { read, respond, approve } from "@polyhook/sdk";
+import { read, respond, approve } from "polyhook";
 
 const event = await read();
 await respond(approve());
@@ -146,7 +146,7 @@ modify({ command: "echo 'safe version'" })  // replacement input for the tool
 
 **TypeScript**
 ```typescript
-import { read, respond, block, approve } from "@polyhook/sdk";
+import { read, respond, block, approve } from "polyhook";
 
 const event = await read();
 if (event.tool === "bash" && /rm\s+-rf\s+\//.test(event.input?.command ?? "")) {
