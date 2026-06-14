@@ -210,3 +210,30 @@ fn gemini_cli_modify() {
     assert_eq!(val["decision"], json!("allow"));
     assert_eq!(val["tool_input"], new_input);
 }
+
+#[test]
+fn hermes_approve() {
+    let val = serialize_response(&HookResponse::approve(), &CallerKind::Hermes);
+    assert_eq!(val, json!({}));
+}
+
+#[test]
+fn hermes_block() {
+    let val = serialize_response(
+        &HookResponse::block("blocked by policy"),
+        &CallerKind::Hermes,
+    );
+    assert_eq!(val["action"], json!("block"));
+    assert_eq!(val["message"], json!("blocked by policy"));
+}
+
+#[test]
+fn hermes_modify() {
+    let new_input = json!({"command": "echo safe"});
+    let val = serialize_response(
+        &HookResponse::modify(new_input.clone()),
+        &CallerKind::Hermes,
+    );
+    assert_eq!(val["action"], json!("modify"));
+    assert_eq!(val["tool_input"], new_input);
+}

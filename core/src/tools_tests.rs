@@ -366,3 +366,52 @@ fn gc_make_directory() {
         "create_dir"
     );
 }
+
+// Hermes tool name mappings
+#[test]
+fn hermes_terminal() {
+    assert_eq!(normalize_tool("terminal", &CallerKind::Hermes), "bash");
+}
+#[test]
+fn hermes_read_file() {
+    assert_eq!(
+        normalize_tool("read_file", &CallerKind::Hermes),
+        "read_file"
+    );
+}
+#[test]
+fn hermes_write_file() {
+    assert_eq!(
+        normalize_tool("write_file", &CallerKind::Hermes),
+        "write_file"
+    );
+}
+#[test]
+fn hermes_patch() {
+    assert_eq!(normalize_tool("patch", &CallerKind::Hermes), "edit_file");
+}
+#[test]
+fn hermes_search_files() {
+    assert_eq!(normalize_tool("search_files", &CallerKind::Hermes), "grep");
+}
+#[test]
+fn hermes_delegate_task() {
+    assert_eq!(
+        normalize_tool("delegate_task", &CallerKind::Hermes),
+        "spawn_agent"
+    );
+}
+#[test]
+fn hermes_browser_tool() {
+    assert_eq!(
+        normalize_tool("browser_navigate", &CallerKind::Hermes),
+        "browser"
+    );
+}
+#[test]
+fn hermes_unknown_falls_through() {
+    assert_eq!(
+        normalize_tool("no_such_tool", &CallerKind::Hermes),
+        "no_such_tool"
+    );
+}

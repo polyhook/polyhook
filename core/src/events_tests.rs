@@ -234,3 +234,58 @@ fn gc_pre_compress_falls_through() {
 fn gc_unknown_falls_through() {
     assert_eq!(normalize_event("Bogus", &CallerKind::GeminiCli), "Bogus");
 }
+
+// Hermes — all arms
+#[test]
+fn hermes_before_tool() {
+    assert_eq!(
+        normalize_event("pre_tool_call", &CallerKind::Hermes),
+        "tool:before"
+    );
+}
+#[test]
+fn hermes_after_tool() {
+    assert_eq!(
+        normalize_event("post_tool_call", &CallerKind::Hermes),
+        "tool:after"
+    );
+}
+#[test]
+fn hermes_pre_llm_call() {
+    assert_eq!(
+        normalize_event("pre_llm_call", &CallerKind::Hermes),
+        "notification"
+    );
+}
+#[test]
+fn hermes_session_start() {
+    assert_eq!(
+        normalize_event("on_session_start", &CallerKind::Hermes),
+        "session:start"
+    );
+}
+#[test]
+fn hermes_session_end() {
+    assert_eq!(
+        normalize_event("on_session_end", &CallerKind::Hermes),
+        "session:stop"
+    );
+}
+#[test]
+fn hermes_session_finalize() {
+    assert_eq!(
+        normalize_event("on_session_finalize", &CallerKind::Hermes),
+        "session:stop"
+    );
+}
+#[test]
+fn hermes_subagent_stop() {
+    assert_eq!(
+        normalize_event("subagent_stop", &CallerKind::Hermes),
+        "agent:stop"
+    );
+}
+#[test]
+fn hermes_unknown_falls_through() {
+    assert_eq!(normalize_event("bogus", &CallerKind::Hermes), "bogus");
+}

@@ -62,6 +62,7 @@ fn extract_event_field(val: &serde_json::Value, caller: &CallerKind) -> String {
         CallerKind::Cline => &["type", "event"],
         CallerKind::Amp => &["kind", "event", "type"],
         CallerKind::GeminiCli => &["hook_event_name"],
+        CallerKind::Hermes => &["hook_event_name"],
         CallerKind::Unknown => &["event", "type", "kind", "hookEvent"],
     };
 
@@ -85,6 +86,7 @@ fn extract_tool_field(val: &serde_json::Value, caller: &CallerKind) -> Option<St
         CallerKind::Cline => str_field(val, "toolName").map(|s| s.to_owned()),
         CallerKind::Amp => str_field(val, "name").map(|s| s.to_owned()),
         CallerKind::GeminiCli => str_field(val, "tool_name").map(|s| s.to_owned()),
+        CallerKind::Hermes => str_field(val, "tool_name").map(|s| s.to_owned()),
         CallerKind::Unknown => {
             for key in &["tool_name", "toolName", "tool", "name"] {
                 if let Some(s) = str_field(val, key) {
@@ -120,6 +122,7 @@ fn extract_input(
             .cloned()
             .or_else(|| val.get("input").cloned()),
         CallerKind::GeminiCli => val.get("tool_input").cloned(),
+        CallerKind::Hermes => val.get("tool_input").cloned(),
         CallerKind::Unknown => {
             for key in &["tool_input", "args", "parameters", "input"] {
                 if let Some(v) = val.get(key) {
@@ -149,6 +152,10 @@ fn extract_output(
             .cloned()
             .or_else(|| val.get("output").cloned()),
         CallerKind::GeminiCli => val.get("tool_response").cloned(),
+        CallerKind::Hermes => val
+            .get("tool_output")
+            .cloned()
+            .or_else(|| val.get("tool_response").cloned()),
         CallerKind::Unknown => {
             for key in &["tool_output", "result", "output"] {
                 if let Some(v) = val.get(key) {
