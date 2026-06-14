@@ -139,7 +139,8 @@
     "dataclass",
     "hermesagent",
     "mapstructure",
-    "cpanel"
+    "cpanel",
+    "gofmt"
   ],
   "overrides": [
     {
