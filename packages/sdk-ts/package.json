@@ -1,5 +1,5 @@
 {
-  "name": "@polyhook/sdk",
+  "name": "polyhook",
   "version": "0.1.0",
   "description": "polyhook TypeScript SDK — write AI coding agent hooks once, run them everywhere",
   "license": "MIT",
