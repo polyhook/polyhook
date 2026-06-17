@@ -10,3 +10,4 @@ warnings = "deny"
 
 [workspace.lints.clippy]
 all = "deny"
+use_self = "deny"
