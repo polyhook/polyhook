@@ -10,13 +10,6 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
 
     let caller = detect_caller(&val);
 
-    // --- event name ---
-    let raw_event = extract_event_field(&val, &caller);
-    let event_str = normalize_event(&raw_event, &caller);
-    let event = event_str
-        .parse::<HookEventEvent>()
-        .unwrap_or(HookEventEvent::Notification);
-
     // --- tool name ---
     let raw_tool = extract_tool_field(&val, &caller);
     let tool = raw_tool.map(|t| normalize_tool(&t, &caller));
@@ -24,6 +17,22 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     // --- input / output ---
     let input = extract_input(&val, &caller);
     let output = extract_output(&val, &caller);
+
+    // --- event name ---
+    // When the caller's event field is absent (e.g. a raw tool payload piped
+    // without its `hook_event_name` envelope) or carries an unrecognized
+    // value, fall back to inferring the event from the payload shape rather
+    // than blindly labelling it a notification. A detected tool with no output
+    // is a pending call (`tool:before`); with output it has already run
+    // (`tool:after`); anything else stays a notification.
+    let raw_event = extract_event_field(&val, &caller);
+    let event = if raw_event.is_empty() {
+        infer_event(&tool, &output)
+    } else {
+        normalize_event(&raw_event, &caller)
+            .parse::<HookEventEvent>()
+            .unwrap_or_else(|_| infer_event(&tool, &output))
+    };
 
     // --- session / agent ids ---
     let session_id = extract_session_id(&val);
@@ -38,6 +47,21 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
         agent_id,
         caller,
     })
+}
+
+/// Infer the normalized event kind from the payload shape when no usable
+/// vendor event name is available. A recognized tool with no output is a
+/// pending tool call; with output it has already run; otherwise there is
+/// nothing actionable, so treat it as a notification.
+fn infer_event(
+    tool: &Option<String>,
+    output: &Option<serde_json::Map<String, serde_json::Value>>,
+) -> HookEventEvent {
+    match (tool, output) {
+        (Some(_), Some(_)) => HookEventEvent::ToolAfter,
+        (Some(_), None) => HookEventEvent::ToolBefore,
+        _ => HookEventEvent::Notification,
+    }
 }
 
 // ---------------------------------------------------------------------------
