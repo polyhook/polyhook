@@ -22,7 +22,7 @@ fn claude_code_pre_tool_use_block_uses_hook_specific_output() {
     use crate::types::HookEventEvent;
     let val = serialize_response_with_event(
         &HookResponse::block("not allowed"),
-        &CallerKind::ClaudeCode,
+        CallerKind::ClaudeCode,
         Some(HookEventEvent::ToolBefore),
     );
     assert_eq!(
@@ -49,7 +49,7 @@ fn claude_code_post_tool_use_block_uses_decision() {
     use crate::types::HookEventEvent;
     let val = serialize_response_with_event(
         &HookResponse::block("not allowed"),
-        &CallerKind::ClaudeCode,
+        CallerKind::ClaudeCode,
         Some(HookEventEvent::ToolAfter),
     );
     assert_eq!(val["decision"], json!("block"));

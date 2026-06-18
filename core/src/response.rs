@@ -6,7 +6,7 @@ use serde_json::{json, Value};
 /// Does not use event-type context. For PreToolUse blocking on Claude Code, prefer
 /// [`serialize_response_with_event`] so the correct `hookSpecificOutput` format is used.
 pub fn serialize_response(resp: &HookResponse, caller: &CallerKind) -> Value {
-    serialize_response_with_event(resp, caller, None)
+    serialize_response_with_event(resp, *caller, None)
 }
 
 /// Like [`serialize_response`] but uses the event type to pick the correct block format.
@@ -14,7 +14,7 @@ pub fn serialize_response(resp: &HookResponse, caller: &CallerKind) -> Value {
 /// instead of `decision: "block"` (which would terminate the whole session).
 pub(crate) fn serialize_response_with_event(
     resp: &HookResponse,
-    caller: &CallerKind,
+    caller: CallerKind,
     event: Option<HookEventEvent>,
 ) -> Value {
     match caller {
