@@ -7,7 +7,7 @@ Core architecture is stable. WASM module handles detection, normalization, and s
 - **Core:** Rust → WASM, caller detection, event + tool normalization, response serialization
 - **Tools:** Claude Code, Cursor, Windsurf, Cline, Amp
 - **SDKs:** TypeScript, Rust, Go, C#, Python
-- **Types:** auto-generated from `schema.json` across every SDK
+- **Types:** auto-generated from `core/schema.json` across every SDK
 
 ---
 

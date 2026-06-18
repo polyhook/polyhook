@@ -55,7 +55,7 @@ your binary  ──stdout──▶  AI tool
 
 ## Normalized Types
 
-Types are auto-generated in every SDK from `schema.json` — not hand-written. See [ARCHITECTURE.md](ARCHITECTURE.md) for the full generation pipeline.
+Types are auto-generated in every SDK from `core/schema.json` — not hand-written. See [ARCHITECTURE.md](ARCHITECTURE.md) for the full generation pipeline.
 
 ### HookEvent
 
