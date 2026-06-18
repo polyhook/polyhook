@@ -306,3 +306,39 @@ fn hermes_session_start() {
     assert!(evt.input.is_none());
     assert!(evt.output.is_none());
 }
+
+#[test]
+fn claude_code_tool_call_without_envelope_event_field() {
+    // Regression for #32: a Claude Code tool payload reaching stdin without
+    // the `hook_event_name` envelope field must still classify as a tool call,
+    // not silently fall back to `notification`.
+    let raw = br#"{"tool_name":"Bash","tool_input":{"command":"git push -X"}}"#;
+    let evt = parse_event(raw).expect("parse failed");
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert_eq!(evt.tool.as_deref(), Some("bash"));
+    let input = evt.input.expect("input should be present");
+    assert_eq!(input["command"], json!("git push -X"));
+}
+
+#[test]
+fn tool_result_without_envelope_event_field_is_tool_after() {
+    // With a tool output present but no event field, the event is inferred as
+    // tool:after to stay consistent with the populated output.
+    let raw = br#"{"tool_name":"Read","tool_input":{"file_path":"/tmp/a"},"tool_output":{"content":"hi"}}"#;
+    let evt = parse_event(raw).expect("parse failed");
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "tool:after");
+    assert!(evt.output.is_some());
+}
+
+#[test]
+fn payload_without_tool_or_event_stays_notification() {
+    // No tool recognized and no event field -> classification falls back to
+    // notification, and tool/input remain unset (kept consistent).
+    let raw = br#"{"session_id":"s1"}"#;
+    let evt = parse_event(raw).expect("parse failed");
+    assert_eq!(evt.event.to_string(), "notification");
+    assert!(evt.tool.is_none());
+    assert!(evt.input.is_none());
+}

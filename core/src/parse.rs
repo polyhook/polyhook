@@ -13,9 +13,7 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     // --- event name ---
     let raw_event = extract_event_field(&val, &caller);
     let event_str = normalize_event(&raw_event, &caller);
-    let event = event_str
-        .parse::<HookEventEvent>()
-        .unwrap_or(HookEventEvent::Notification);
+    let classified_event = event_str.parse::<HookEventEvent>().ok();
 
     // --- tool name ---
     let raw_tool = extract_tool_field(&val, &caller);
@@ -24,6 +22,25 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     // --- input / output ---
     let input = extract_input(&val, &caller);
     let output = extract_output(&val, &caller);
+
+    // If the caller's envelope event field (e.g. Claude Code's
+    // `hook_event_name`) is missing or unrecognized, the event cannot be
+    // classified from the name alone. When a tool call was nonetheless
+    // recognized (tool name present), infer the event from the payload shape so
+    // the classification stays consistent with the populated `tool`/`input`/
+    // `output` fields — otherwise downstream handlers gating on
+    // `event === 'tool:before'` would silently skip a real tool call.
+    let event = classified_event.unwrap_or_else(|| {
+        if tool.is_some() {
+            if output.is_some() {
+                HookEventEvent::ToolAfter
+            } else {
+                HookEventEvent::ToolBefore
+            }
+        } else {
+            HookEventEvent::Notification
+        }
+    });
 
     // --- session / agent ids ---
     let session_id = extract_session_id(&val);
