@@ -305,7 +305,7 @@ All language SDKs pick up the changes automatically. Add a fixture in `core/test
 
 ### Where does the canonical type schema live?
 
-`schema.json` at the repo root. All SDK types (`HookEvent`, `HookResponse`, `CallerKind`, etc.) are generated from it at build time. Editing a field here and rebuilding propagates the change to every language SDK simultaneously. Never hand-edit generated type files.
+`core/schema.json`. All SDK types (`HookEvent`, `HookResponse`, `CallerKind`, etc.) are generated from it at build time. Editing a field here and rebuilding propagates the change to every language SDK simultaneously. Never hand-edit generated type files.
 
 ---
 

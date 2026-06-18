@@ -26,6 +26,7 @@ No logic is re-implemented per language. All SDKs call the same WASM binary, so 
 ```
 polyhook/
 ├── core/          # Rust: detection, normalization, serde — compiled to WASM + native
+│   └── schema.json       # single source of truth — types auto-generated from this into every SDK
 ├── packages/
 │   ├── sdk-rust/          # Rust SDK (native, links core directly)
 │   │   └── examples/
@@ -38,7 +39,6 @@ polyhook/
 │   └── sdk-python/        # Python bindings (wasmtime-py)
 │       └── examples/
 ├── polyhook.wasm          # built artifact, bundled into each SDK package
-├── schema.json            # single source of truth — types auto-generated from this into every SDK
 └── tools.toml             # canonical tool registry — status, homepage, hooks_docs per tool
 ```
 
@@ -46,10 +46,10 @@ polyhook/
 
 ## Type Generation
 
-All SDK types (`HookEvent`, `HookResponse`, and related enums) are auto-generated from `schema.json` at build time. No type is hand-written in any language binding.
+All SDK types (`HookEvent`, `HookResponse`, and related enums) are auto-generated from `core/schema.json` at build time. No type is hand-written in any language binding.
 
 ```
-schema.json
+core/schema.json
     │
     ├── core/ → types.rs   (typify)  ← used by WASM + native core
     ├── packages/sdk-rust/    → types.rs   (typify)  ← Rust SDK
@@ -59,7 +59,7 @@ schema.json
     └── sdk-python/    → models.py                        (datamodel-code-generator)
 ```
 
-Changing a field in `schema.json` and rebuilding propagates the change to every SDK simultaneously.
+Changing a field in `core/schema.json` and rebuilding propagates the change to every SDK simultaneously.
 
 ---
 
