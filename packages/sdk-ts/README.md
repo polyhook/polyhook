@@ -9,18 +9,18 @@ Ships as dual ESM + CJS — works with `import` (ESM) and `require` (CJS) out of
 ## Install
 
 ```bash
-npm install polyhook
+npm install @polyhook/sdk
 # or
-pnpm add polyhook
+pnpm add @polyhook/sdk
 # or
-yarn add polyhook
+yarn add @polyhook/sdk
 ```
 
 ## Quick Start
 
 ```typescript
 // ESM ("type": "module" or .mts)
-import { read, respond, block, approve } from "polyhook";
+import { read, respond, block, approve } from "@polyhook/sdk";
 
 const event = await read();
 
@@ -36,7 +36,7 @@ if (
 
 ```javascript
 // CJS (require)
-const { read, respond, block, approve } = require("polyhook");
+const { read, respond, block, approve } = require("@polyhook/sdk");
 
 async function main() {
   const event = await read();
