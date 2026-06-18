@@ -15,9 +15,7 @@ pub fn normalize_event(vendor: &str, caller: &CallerKind) -> String {
         CallerKind::Unknown => None,
     };
 
-    canonical
-        .map(|s| s.to_owned())
-        .unwrap_or_else(|| vendor.to_owned())
+    canonical.map_or_else(|| vendor.to_owned(), |s| s.to_owned())
 }
 
 fn normalize_claude_code_event(vendor: &str) -> Option<&'static str> {
