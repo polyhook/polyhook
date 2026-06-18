@@ -9,4 +9,7 @@ resolver = "2"
 warnings = "deny"
 
 [workspace.lints.clippy]
-all = "deny"
+all = { level = "deny", priority = -1 }
+# Require an explicit trailing `;` on unit-returning statements so a block's
+# final expression unambiguously signals whether it yields a value.
+semicolon_if_nothing_returned = "deny"
