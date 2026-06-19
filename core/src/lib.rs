@@ -51,7 +51,7 @@ pub fn read_from(r: &mut impl Read) -> Result<HookEvent, String> {
 pub fn respond_to(w: &mut impl Write, response: &HookResponse) -> Result<(), String> {
     let caller = LAST_CALLER.with(|c| *c.borrow());
     let event = LAST_EVENT.with(|e| *e.borrow());
-    let value = serialize_response_with_event(response, &caller, event);
+    let value = serialize_response_with_event(response, caller, event);
     // serde_json::Value is always serializable; expect is safe here.
     let json = serde_json::to_string(&value).expect("serde_json::Value is always serializable");
 

@@ -11,12 +11,12 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     let caller = detect_caller(&val);
 
     // --- tool name ---
-    let raw_tool = extract_tool_field(&val, &caller);
+    let raw_tool = extract_tool_field(&val, caller);
     let tool = raw_tool.map(|t| normalize_tool(&t, &caller));
 
     // --- input / output ---
-    let input = extract_input(&val, &caller);
-    let output = extract_output(&val, &caller);
+    let input = extract_input(&val, caller);
+    let output = extract_output(&val, caller);
 
     // --- event name ---
     // When the caller's event field is absent (e.g. a raw tool payload piped
@@ -25,7 +25,7 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     // than blindly labelling it a notification. A detected tool with no output
     // is a pending call (`tool:before`); with output it has already run
     // (`tool:after`); anything else stays a notification.
-    let raw_event = extract_event_field(&val, &caller);
+    let raw_event = extract_event_field(&val, caller);
     let event = if raw_event.is_empty() {
         infer_event(&tool, &output)
     } else {
@@ -72,7 +72,7 @@ fn str_field<'a>(val: &'a serde_json::Value, key: &str) -> Option<&'a str> {
     val.get(key).and_then(|v| v.as_str())
 }
 
-fn extract_event_field(val: &serde_json::Value, caller: &CallerKind) -> String {
+fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
     let candidates: &[&str] = match caller {
         CallerKind::ClaudeCode => &[
             "hook_event_name",
@@ -98,7 +98,7 @@ fn extract_event_field(val: &serde_json::Value, caller: &CallerKind) -> String {
     String::new()
 }
 
-fn extract_tool_field(val: &serde_json::Value, caller: &CallerKind) -> Option<String> {
+fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
     match caller {
         CallerKind::ClaudeCode => str_field(val, "tool_name").map(|s| s.to_owned()),
         CallerKind::Cursor => val
@@ -131,7 +131,7 @@ fn into_map(v: serde_json::Value) -> Option<serde_json::Map<String, serde_json::
 
 fn extract_input(
     val: &serde_json::Value,
-    caller: &CallerKind,
+    caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
         CallerKind::ClaudeCode => val.get("tool_input").cloned(),
@@ -161,7 +161,7 @@ fn extract_input(
 
 fn extract_output(
     val: &serde_json::Value,
-    caller: &CallerKind,
+    caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
         CallerKind::ClaudeCode => val.get("tool_output").cloned(),
