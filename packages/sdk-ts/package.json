@@ -1,17 +1,17 @@
 {
-  "name": "polyhook",
+  "name": "@polyhook/sdk",
   "version": "0.1.0",
   "description": "polyhook TypeScript SDK — write AI coding agent hooks once, run them everywhere",
   "license": "MIT",
   "author": "tupe12334",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tupe12334/polyhook.git",
+    "url": "https://github.com/polyhook/polyhook.git",
     "directory": "packages/sdk-ts"
   },
-  "homepage": "https://github.com/tupe12334/polyhook#readme",
+  "homepage": "https://github.com/polyhook/polyhook#readme",
   "bugs": {
-    "url": "https://github.com/tupe12334/polyhook/issues"
+    "url": "https://github.com/polyhook/polyhook/issues"
   },
   "keywords": [
     "polyhook",

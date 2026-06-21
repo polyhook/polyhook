@@ -13,3 +13,6 @@ all = { level = "deny", priority = -1 }
 # Prefer `map_or`/`map_or_else` over `map(..).unwrap_or(..)`/`map(..).unwrap_or_else(..)`:
 # one allocation-free combinator instead of two chained calls — clearer and harder to misread.
 map_unwrap_or = "deny"
+# Small `Copy` types (e.g. the 1-byte `CallerKind` enum) are cheaper and
+# clearer to pass by value than by reference. See PR enabling this lint.
+trivially_copy_pass_by_ref = "warn"

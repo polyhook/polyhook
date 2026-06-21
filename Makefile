@@ -14,7 +14,7 @@
 #   wasm32 target : rustup target add wasm32-unknown-unknown
 #   cspell      : npm install -g cspell
 
-SCHEMA        := schema.json
+SCHEMA        := core/schema.json
 TS_OUT        := packages/sdk-ts/src/generated/types.ts
 GO_OUT        := packages/sdk-go/generated_types.go
 PYTHON_OUT    := packages/sdk-python/src/polyhook/generated_models.py
@@ -43,7 +43,7 @@ schema/rust:
 	@echo "  // Source of truth: schema.json — keep in sync manually."
 	@echo ""
 	@echo "build.rs emits:"
-	@echo "  cargo:rerun-if-changed=../schema.json"
+	@echo "  cargo:rerun-if-changed=schema.json"
 	@echo "so Cargo invalidates the build whenever schema.json changes."
 	@echo ""
 	@echo "Run 'cargo build -p polyhook-core' to recompile."
