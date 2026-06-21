@@ -13,3 +13,6 @@ all = { level = "deny", priority = -1 }
 # Require an explicit trailing `;` on unit-returning statements so a block's
 # final expression unambiguously signals whether it yields a value.
 semicolon_if_nothing_returned = "deny"
+# Small `Copy` types (e.g. the 1-byte `CallerKind` enum) are cheaper and
+# clearer to pass by value than by reference. See PR enabling this lint.
+trivially_copy_pass_by_ref = "warn"
