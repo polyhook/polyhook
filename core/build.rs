@@ -2,10 +2,9 @@ use std::{env, fs, path::PathBuf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR")?;
-    let schema_path = PathBuf::from(&manifest_dir)
-        .parent()
-        .expect("CARGO_MANIFEST_DIR has no parent")
-        .join("schema.json");
+    // schema.json lives inside the crate so it ships in the published crates.io
+    // tarball and is available when build.rs runs during publish verification.
+    let schema_path = PathBuf::from(&manifest_dir).join("schema.json");
 
     println!("cargo:rerun-if-changed={}", schema_path.display());
 
