@@ -1,5 +1,5 @@
 /**
- * Unit tests for polyhook
+ * Unit tests for @polyhook/sdk
  *
  * The WASM module is replaced with an in-process mock so tests run without a
  * compiled polyhook.wasm binary.  The mock implements the same memory-layout

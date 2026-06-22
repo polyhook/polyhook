@@ -9,7 +9,10 @@ resolver = "2"
 warnings = "deny"
 
 [workspace.lints.clippy]
-all = "deny"
 # Prefer passing a method path (e.g. `str::to_owned`) over a closure that only
 # forwards its argument to a method call (e.g. `|s| s.to_owned()`).
 redundant_closure_for_method_calls = "deny"
+all = { level = "deny", priority = -1 }
+# Small `Copy` types (e.g. the 1-byte `CallerKind` enum) are cheaper and
+# clearer to pass by value than by reference. See PR enabling this lint.
+trivially_copy_pass_by_ref = "warn"
