@@ -306,3 +306,55 @@ fn hermes_session_start() {
     assert!(evt.input.is_none());
     assert!(evt.output.is_none());
 }
+
+// ---------------------------------------------------------------------------
+// Event inference when the vendor event field is missing or unrecognized.
+// ---------------------------------------------------------------------------
+
+fn parse_value(val: serde_json::Value) -> crate::HookEvent {
+    parse_event(val.to_string().as_bytes()).expect("parse failed")
+}
+
+#[test]
+fn infers_tool_before_when_hook_event_name_missing() {
+    // A Claude Code tool payload reaching stdin without `hook_event_name`.
+    let evt = parse_value(json!({
+        "tool_name": "Bash",
+        "tool_input": { "command": "ls -la" },
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert_eq!(evt.tool.as_deref(), Some("bash"));
+    let input = evt.input.expect("input should be present");
+    assert_eq!(input["command"], json!("ls -la"));
+    assert!(evt.output.is_none());
+}
+
+#[test]
+fn infers_tool_after_when_event_missing_but_output_present() {
+    let evt = parse_value(json!({
+        "tool_name": "Read",
+        "tool_input": { "file_path": "/tmp/foo.txt" },
+        "tool_output": { "content": "hi" },
+    }));
+    assert_eq!(evt.event.to_string(), "tool:after");
+    assert!(evt.output.is_some());
+}
+
+#[test]
+fn stays_notification_when_event_missing_and_no_tool() {
+    let evt = parse_value(json!({ "message": "heads up" }));
+    assert_eq!(evt.event.to_string(), "notification");
+    assert!(evt.tool.is_none());
+}
+
+#[test]
+fn infers_tool_before_for_unrecognized_event_name_with_tool() {
+    let evt = parse_value(json!({
+        "hook_event_name": "SomethingNew",
+        "tool_name": "Bash",
+        "tool_input": { "command": "ls" },
+    }));
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert_eq!(evt.tool.as_deref(), Some("bash"));
+}

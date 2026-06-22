@@ -10,20 +10,29 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
 
     let caller = detect_caller(&val);
 
-    // --- event name ---
-    let raw_event = extract_event_field(&val, &caller);
-    let event_str = normalize_event(&raw_event, &caller);
-    let event = event_str
-        .parse::<HookEventEvent>()
-        .unwrap_or(HookEventEvent::Notification);
-
     // --- tool name ---
-    let raw_tool = extract_tool_field(&val, &caller);
+    let raw_tool = extract_tool_field(&val, caller);
     let tool = raw_tool.map(|t| normalize_tool(&t, &caller));
 
     // --- input / output ---
-    let input = extract_input(&val, &caller);
-    let output = extract_output(&val, &caller);
+    let input = extract_input(&val, caller);
+    let output = extract_output(&val, caller);
+
+    // --- event name ---
+    // When the caller's event field is absent (e.g. a raw tool payload piped
+    // without its `hook_event_name` envelope) or carries an unrecognized
+    // value, fall back to inferring the event from the payload shape rather
+    // than blindly labelling it a notification. A detected tool with no output
+    // is a pending call (`tool:before`); with output it has already run
+    // (`tool:after`); anything else stays a notification.
+    let raw_event = extract_event_field(&val, caller);
+    let event = if raw_event.is_empty() {
+        infer_event(&tool, &output)
+    } else {
+        normalize_event(&raw_event, &caller)
+            .parse::<HookEventEvent>()
+            .unwrap_or_else(|_| infer_event(&tool, &output))
+    };
 
     // --- session / agent ids ---
     let session_id = extract_session_id(&val);
@@ -40,6 +49,21 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     })
 }
 
+/// Infer the normalized event kind from the payload shape when no usable
+/// vendor event name is available. A recognized tool with no output is a
+/// pending tool call; with output it has already run; otherwise there is
+/// nothing actionable, so treat it as a notification.
+fn infer_event(
+    tool: &Option<String>,
+    output: &Option<serde_json::Map<String, serde_json::Value>>,
+) -> HookEventEvent {
+    match (tool, output) {
+        (Some(_), Some(_)) => HookEventEvent::ToolAfter,
+        (Some(_), None) => HookEventEvent::ToolBefore,
+        _ => HookEventEvent::Notification,
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Field extraction helpers
 // ---------------------------------------------------------------------------
@@ -48,7 +72,7 @@ fn str_field<'a>(val: &'a serde_json::Value, key: &str) -> Option<&'a str> {
     val.get(key).and_then(|v| v.as_str())
 }
 
-fn extract_event_field(val: &serde_json::Value, caller: &CallerKind) -> String {
+fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
     let candidates: &[&str] = match caller {
         CallerKind::ClaudeCode => &[
             "hook_event_name",
@@ -74,7 +98,7 @@ fn extract_event_field(val: &serde_json::Value, caller: &CallerKind) -> String {
     String::new()
 }
 
-fn extract_tool_field(val: &serde_json::Value, caller: &CallerKind) -> Option<String> {
+fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
     match caller {
         CallerKind::ClaudeCode => str_field(val, "tool_name").map(|s| s.to_owned()),
         CallerKind::Cursor => val
@@ -107,7 +131,7 @@ fn into_map(v: serde_json::Value) -> Option<serde_json::Map<String, serde_json::
 
 fn extract_input(
     val: &serde_json::Value,
-    caller: &CallerKind,
+    caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
         CallerKind::ClaudeCode => val.get("tool_input").cloned(),
@@ -137,7 +161,7 @@ fn extract_input(
 
 fn extract_output(
     val: &serde_json::Value,
-    caller: &CallerKind,
+    caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
         CallerKind::ClaudeCode => val.get("tool_output").cloned(),
