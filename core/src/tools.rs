@@ -19,7 +19,7 @@ pub fn normalize_tool(vendor: &str, caller: &CallerKind) -> String {
     };
 
     canonical
-        .map(|s| s.to_owned())
+        .map(str::to_owned)
         .unwrap_or_else(|| vendor.to_owned())
 }
 

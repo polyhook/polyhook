@@ -9,6 +9,9 @@ resolver = "2"
 warnings = "deny"
 
 [workspace.lints.clippy]
+# Prefer passing a method path (e.g. `str::to_owned`) over a closure that only
+# forwards its argument to a method call (e.g. `|s| s.to_owned()`).
+redundant_closure_for_method_calls = "deny"
 all = { level = "deny", priority = -1 }
 # Require an explicit trailing `;` on unit-returning statements so a block's
 # final expression unambiguously signals whether it yields a value.
