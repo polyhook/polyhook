@@ -10,14 +10,14 @@ PolyhookSchema: TypeAlias = Any
 
 
 class CallerKind(Enum):
-    claude_code = 'claude-code'
-    cursor = 'cursor'
-    windsurf = 'windsurf'
-    cline = 'cline'
-    amp = 'amp'
-    gemini_cli = 'gemini-cli'
-    hermes = 'hermes'
-    unknown = 'unknown'
+    claude_code = "claude-code"
+    cursor = "cursor"
+    windsurf = "windsurf"
+    cline = "cline"
+    amp = "amp"
+    gemini_cli = "gemini-cli"
+    hermes = "hermes"
+    unknown = "unknown"
 
 
 class Event(Enum):

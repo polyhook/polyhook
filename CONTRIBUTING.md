@@ -16,9 +16,17 @@ npm install
 make install-hooks
 ```
 
-The committed pre-push hook runs `make format` before the existing checks so
-contributors cannot push unformatted Rust, TypeScript, Go, Python, or .NET
-sources after installing hooks.
+The committed pre-push hook runs `make format-check` before the existing checks
+so contributors cannot push unformatted Rust, TypeScript, Go, Python, or .NET
+sources after installing hooks. Unlike `make format`, the check is read-only: it
+fails (without modifying files) when anything needs formatting.
+
+Run the checks or fix formatting locally with:
+
+```sh
+make format-check   # verify formatting (fails if any source needs formatting)
+make format         # rewrite sources in place to fix formatting
+```
 
 ## Project Structure
 

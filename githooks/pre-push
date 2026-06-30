@@ -11,8 +11,12 @@ fi
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
-echo "▶ Formatting sources before push…"
-make format
+echo "▶ Checking formatting before push…"
+if ! make format-check; then
+  echo "" >&2
+  echo "pre-push: formatting check failed. Run 'make format' to fix, then commit." >&2
+  exit 1
+fi
 
 echo "▶ Generating READMEs…"
 make readme

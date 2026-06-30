@@ -22,7 +22,7 @@ DOTNET_OUT    := packages/sdk-dotnet/GeneratedTypes.cs
 WASM_OUT      := polyhook.wasm
 
 .PHONY: all schema schema/rust schema/ts schema/go schema/dotnet schema/python \
-        wasm test spell format install-hooks readme help
+        wasm test spell format format-check install-hooks readme help
 
 # ── Default ──────────────────────────────────────────────────────────────────
 all: schema
@@ -166,6 +166,28 @@ format:
 	uvx ruff format packages/sdk-python/src packages/sdk-python/examples
 	@echo "── .NET ────────────────────────────────────────────────"
 	dotnet format packages/sdk-dotnet/Polyhook.Sdk.csproj --include \
+		packages/sdk-dotnet/*.cs \
+		packages/sdk-dotnet/examples/BlockRmRf/Program.cs \
+		packages/sdk-dotnet/examples/LogAllTools/Program.cs
+
+# ── format-check ──────────────────────────────────────────────────────────────
+## format-check: Verify formatting without writing (fails if any source needs formatting)
+format-check:
+	@echo "── Rust ────────────────────────────────────────────────"
+	cargo fmt --all --check
+	@echo "── TypeScript ──────────────────────────────────────────"
+	cd packages/sdk-ts && npx --yes prettier --check "src/**/*.ts" "examples/**/*.ts" "*.config.ts"
+	@echo "── Go ──────────────────────────────────────────────────"
+	@unformatted="$$(find packages/sdk-go -name '*.go' -not -path '*/vendor/*' -exec gofmt -l {} +)"; \
+		if [ -n "$$unformatted" ]; then \
+			echo "The following Go files need formatting (run 'make format'):" >&2; \
+			echo "$$unformatted" >&2; \
+			exit 1; \
+		fi
+	@echo "── Python ──────────────────────────────────────────────"
+	uvx ruff format --check packages/sdk-python/src packages/sdk-python/examples
+	@echo "── .NET ────────────────────────────────────────────────"
+	dotnet format packages/sdk-dotnet/Polyhook.Sdk.csproj --verify-no-changes --include \
 		packages/sdk-dotnet/*.cs \
 		packages/sdk-dotnet/examples/BlockRmRf/Program.cs \
 		packages/sdk-dotnet/examples/LogAllTools/Program.cs
