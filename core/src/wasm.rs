@@ -14,8 +14,8 @@
 use std::cell::RefCell;
 
 use crate::parse::parse_event;
-use crate::response::serialize_response;
-use crate::types::CallerKind;
+use crate::response::serialize_response_with_event;
+use crate::types::{CallerKind, HookEventEvent};
 
 // Use wee_alloc as the global allocator when targeting WASM to minimise
 // binary size.
@@ -23,10 +23,14 @@ use crate::types::CallerKind;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-// Store the caller detected during `parse` so that `serialize` can use it
-// without requiring callers to pass it explicitly.
+// Store the caller and event type detected during `parse` so that `serialize`
+// can use them without requiring callers to pass them explicitly. Mirrors the
+// LAST_CALLER/LAST_EVENT pair in lib.rs's native `read_from`/`respond_to`
+// path, which this WASM ABI must match to pick the correct Claude Code block
+// format (see serialize_response_with_event).
 thread_local! {
     static LAST_CALLER: RefCell<CallerKind> = const { RefCell::new(CallerKind::Unknown) };
+    static LAST_EVENT: RefCell<Option<HookEventEvent>> = const { RefCell::new(None) };
 }
 
 // ---------------------------------------------------------------------------
@@ -86,9 +90,12 @@ pub unsafe extern "C" fn parse(ptr: *const u8, len: usize) -> *mut u8 {
 
     let result: Vec<u8> = match parse_event(input) {
         Ok(event) => {
-            // Persist the caller for subsequent serialize calls.
+            // Persist the caller and event type for the subsequent serialize call.
             LAST_CALLER.with(|c| {
                 *c.borrow_mut() = event.caller;
+            });
+            LAST_EVENT.with(|e| {
+                *e.borrow_mut() = Some(event.event);
             });
             match serde_json::to_vec(&event) {
                 Ok(bytes) => bytes,
@@ -141,7 +148,8 @@ pub unsafe extern "C" fn serialize(ptr: *const u8, len: usize) -> *mut u8 {
                 _ => crate::types::HookResponse::approve(),
             };
             let caller = LAST_CALLER.with(|c| *c.borrow());
-            let value = serialize_response(&resp, &caller);
+            let event = LAST_EVENT.with(|e| *e.borrow());
+            let value = serialize_response_with_event(&resp, caller, event);
             match serde_json::to_vec(&value) {
                 Ok(bytes) => bytes,
                 Err(e) => format!("{{\"error\":\"serialize failed: {e}\"}}").into_bytes(),
@@ -304,8 +312,9 @@ mod tests {
     }
 
     #[test]
-    fn serialize_block_returns_length_prefixed_json_with_block_content() {
-        // First parse something so LAST_CALLER is set (ClaudeCode).
+    fn serialize_block_for_pre_tool_use_uses_permission_decision_deny() {
+        // Parse a Claude Code PreToolUse event so LAST_CALLER/LAST_EVENT are set
+        // to (ClaudeCode, ToolBefore).
         let event_json =
             br#"{"type":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls"},"session_id":"s2"}"#;
         unsafe {
@@ -327,8 +336,59 @@ mod tests {
 
             let (payload, total) = read_length_prefixed(out_ptr);
             let s = String::from_utf8(payload).expect("valid utf8");
-            // Claude Code block format (WASM path, no event context) uses decision:block.
-            assert!(s.contains("block"), "expected 'block' in: {s}");
+            let parsed: serde_json::Value = serde_json::from_str(&s).expect("should be valid JSON");
+            // Blocking a PreToolUse call must use hookSpecificOutput/permissionDecision
+            // so Claude Code denies only this tool call, not `decision: "block"` which
+            // terminates the whole session (see issue #11 — this is the WASM ABI
+            // path that fix originally missed).
+            assert_eq!(
+                parsed["hookSpecificOutput"]["hookEventName"],
+                serde_json::json!("PreToolUse")
+            );
+            assert_eq!(
+                parsed["hookSpecificOutput"]["permissionDecision"],
+                serde_json::json!("deny")
+            );
+            assert_eq!(
+                parsed["hookSpecificOutput"]["permissionDecisionReason"],
+                serde_json::json!("dangerous command")
+            );
+            assert!(parsed.get("decision").is_none());
+
+            dealloc(input_ptr, json.len());
+            dealloc(out_ptr, total);
+        }
+    }
+
+    #[test]
+    fn serialize_block_for_post_tool_use_uses_decision_block() {
+        // Parse a Claude Code PostToolUse event so LAST_CALLER/LAST_EVENT are set
+        // to (ClaudeCode, ToolAfter) — this variant still uses the generic
+        // `decision: "block"` format, which is correct outside PreToolUse.
+        let event_json = br#"{"type":"PostToolUse","tool_name":"Bash","tool_input":{"command":"ls"},"tool_output":{"content":"ok"},"session_id":"s2"}"#;
+        unsafe {
+            let ep = alloc(event_json.len());
+            std::ptr::copy_nonoverlapping(event_json.as_ptr(), ep, event_json.len());
+            let ep_out = parse(ep as *const u8, event_json.len());
+            let (_, ep_total) = read_length_prefixed(ep_out);
+            dealloc(ep, event_json.len());
+            dealloc(ep_out, ep_total);
+        }
+
+        let json = br#"{"action":"block","message":"dangerous command"}"#;
+        unsafe {
+            let input_ptr = alloc(json.len());
+            std::ptr::copy_nonoverlapping(json.as_ptr(), input_ptr, json.len());
+
+            let out_ptr = serialize(input_ptr as *const u8, json.len());
+            assert!(!out_ptr.is_null());
+
+            let (payload, total) = read_length_prefixed(out_ptr);
+            let s = String::from_utf8(payload).expect("valid utf8");
+            let parsed: serde_json::Value = serde_json::from_str(&s).expect("should be valid JSON");
+            assert_eq!(parsed["decision"], serde_json::json!("block"));
+            assert_eq!(parsed["reason"], serde_json::json!("dangerous command"));
+            assert!(parsed.get("hookSpecificOutput").is_none());
 
             dealloc(input_ptr, json.len());
             dealloc(out_ptr, total);
