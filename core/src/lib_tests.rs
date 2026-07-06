@@ -2,7 +2,7 @@ use super::*;
 use std::io::Cursor;
 
 const CLAUDE_PRE_TOOL: &str = r#"{"type":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls -la"},"session_id":"sess_test_001"}"#;
-const CURSOR_BEFORE_TOOL: &str = r#"{"type":"BeforeToolCall","toolCall":{"name":"run_terminal_cmd","args":{"command":"echo hi"}},"sessionId":"sess_test_002"}"#;
+const CURSOR_BEFORE_TOOL: &str = r#"{"hook_event_name":"beforeShellExecution","command":"echo hi","conversation_id":"sess_test_002"}"#;
 
 #[test]
 fn read_from_parses_claude_code_event() {
@@ -46,8 +46,8 @@ fn respond_to_block_uses_detected_caller() {
 
     let json: serde_json::Value =
         serde_json::from_slice(&output).expect("output should be valid JSON");
-    assert_eq!(json["action"], "deny");
-    assert_eq!(json["message"], "stop");
+    assert_eq!(json["permission"], "deny");
+    assert_eq!(json["agent_message"], "stop");
 }
 
 #[test]
@@ -106,7 +106,7 @@ fn last_caller_thread_local_is_updated_by_read_from() {
     let mut output2: Vec<u8> = Vec::new();
     respond_to(&mut output2, &HookResponse::approve()).expect("respond_to should succeed");
     let json2: serde_json::Value = serde_json::from_slice(&output2).unwrap();
-    assert_eq!(json2["action"], "allow");
+    assert_eq!(json2["permission"], "allow");
 }
 
 #[test]

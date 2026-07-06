@@ -15,7 +15,7 @@ mod tests {
     use polyhook_core::types::{CallerKind, HookResponse};
 
     const CLAUDE_PRE_TOOL_USE: &str = r#"{"type":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls -la"},"session_id":"sess_123"}"#;
-    const CURSOR_BEFORE_TOOL_CALL: &str = r#"{"type":"BeforeToolCall","toolCall":{"name":"run_terminal_cmd","args":{"command":"ls -la"}},"sessionId":"sess_456"}"#;
+    const CURSOR_BEFORE_TOOL_CALL: &str = r#"{"hook_event_name":"beforeShellExecution","command":"ls -la","conversation_id":"sess_456"}"#;
     const WINDSURF_PRE_TOOL: &str = r#"{"event":"pre_tool","tool":"run_command","parameters":{"command":"ls -la"},"session":"sess_789"}"#;
     const CLINE_BEFORE_TOOL_USE: &str = r#"{"type":"beforeToolUse","toolName":"execute_command","input":{"command":"ls -la"},"sessionId":"sess_abc"}"#;
     const AMP_TOOL_BEFORE: &str = r#"{"kind":"tool.before","name":"shell","input":{"command":"ls -la"},"sessionId":"sess_def"}"#;
@@ -92,14 +92,14 @@ mod tests {
     #[test]
     fn serialize_cursor_approve() {
         assert_eq!(
-            serialize_response(&HookResponse::approve(), &CallerKind::Cursor)["action"],
+            serialize_response(&HookResponse::approve(), &CallerKind::Cursor)["permission"],
             "allow"
         );
     }
     #[test]
     fn serialize_cursor_block() {
         assert_eq!(
-            serialize_response(&HookResponse::block("x"), &CallerKind::Cursor)["action"],
+            serialize_response(&HookResponse::block("x"), &CallerKind::Cursor)["permission"],
             "deny"
         );
     }

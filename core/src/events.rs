@@ -34,11 +34,13 @@ fn normalize_claude_code_event(vendor: &str) -> Option<&'static str> {
 
 fn normalize_cursor_event(vendor: &str) -> Option<&'static str> {
     match vendor {
-        "BeforeToolCall" => Some("tool:before"),
-        "AfterToolCall" => Some("tool:after"),
-        "SessionStart" => Some("session:start"),
-        "SessionEnd" => Some("session:stop"),
-        "Notification" => Some("notification"),
+        "preToolUse" | "beforeShellExecution" | "beforeMCPExecution" => Some("tool:before"),
+        "postToolUse" | "postToolUseFailure" | "afterShellExecution" | "afterMCPExecution" => {
+            Some("tool:after")
+        }
+        "sessionStart" | "workspaceOpen" => Some("session:start"),
+        "sessionEnd" | "stop" => Some("session:stop"),
+        "subagentStop" => Some("agent:stop"),
         _ => None,
     }
 }
