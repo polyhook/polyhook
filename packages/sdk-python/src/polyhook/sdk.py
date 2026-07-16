@@ -29,6 +29,7 @@ class HookEvent:
 
     event: str
     tool: Optional[str]
+    bin: Optional[str]
     input: Optional[dict[str, Any]]
     output: Optional[dict[str, Any]]
     session_id: str
@@ -187,6 +188,7 @@ def read() -> HookEvent:
     return HookEvent(
         event=data["event"],
         tool=data.get("tool"),
+        bin=data.get("bin"),
         input=data.get("input"),
         output=data.get("output"),
         session_id=data["sessionId"],

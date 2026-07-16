@@ -35,6 +35,7 @@ class HookEvent:
     sessionId: str
     caller: CallerKind
     tool: str | None = None
+    bin: str | None = None
     input: dict[str, Any] | None = None
     output: dict[str, Any] | None = None
     agentId: str | None = None

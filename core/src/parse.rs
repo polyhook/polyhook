@@ -38,9 +38,21 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     let session_id = extract_session_id(&val);
     let agent_id = extract_agent_id(&val);
 
+    // --- bin ---
+    let bin = if tool.as_deref() == Some("bash") {
+        input
+            .as_ref()
+            .and_then(|m| m.get("command"))
+            .and_then(|v| v.as_str())
+            .and_then(extract_bin)
+    } else {
+        None
+    };
+
     Ok(HookEvent {
         event,
         tool,
+        bin,
         input,
         output,
         session_id,
@@ -208,6 +220,31 @@ fn extract_agent_id(val: &serde_json::Value) -> Option<String> {
         }
     }
     None
+}
+
+/// Returns true if `token` is a shell env-var assignment (`KEY=VAL`) where
+/// `KEY` matches `[A-Za-z_][A-Za-z0-9_]*`. `VAL` may be empty.
+fn is_env_assignment(token: &str) -> bool {
+    let Some((key, _val)) = token.split_once('=') else {
+        return false;
+    };
+    let mut chars = key.chars();
+    match chars.next() {
+        Some(c) if c.is_ascii_alphabetic() || c == '_' => {}
+        _ => return false,
+    }
+    chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
+/// Extracts the executable being run from a bash `command` string: the first
+/// whitespace-separated token that is not a leading env-var assignment. The
+/// full token (including any path) is preserved verbatim. Returns `None` when
+/// the command is empty or consists entirely of env-var assignments.
+fn extract_bin(command: &str) -> Option<String> {
+    command
+        .split_whitespace()
+        .find(|tok| !is_env_assignment(tok))
+        .map(str::to_owned)
 }
 
 // ---------------------------------------------------------------------------

@@ -82,6 +82,17 @@ public sealed record HookEvent
     public string? Tool { get; init; }
 
     /// <summary>
+    /// Executable name or path extracted from the bash command's first
+    /// non-assignment token (e.g. 'git' from 'GIT_DIR=.git git commit -m msg',
+    /// or '/usr/bin/python3' from '/usr/bin/python3 foo.py'). Only populated
+    /// when tool is 'bash' and input.command is present; null otherwise,
+    /// including when the command is empty or consists entirely of
+    /// env-var assignments.
+    /// </summary>
+    [JsonPropertyName("bin")]
+    public string? Bin { get; init; }
+
+    /// <summary>
     /// Tool input arguments as a free-form object. Present for tool:before
     /// events; null otherwise. The shape depends on the specific tool being called.
     /// </summary>

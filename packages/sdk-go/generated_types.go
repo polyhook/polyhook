@@ -43,6 +43,13 @@ type HookEvent struct {
 	// agent.
 	AgentId *string `json:"agentId,omitempty" yaml:"agentId,omitempty" mapstructure:"agentId,omitempty"`
 
+	// Executable name or path extracted from the bash command's first non-assignment
+	// token (e.g. 'git' from 'GIT_DIR=.git git commit -m msg', or '/usr/bin/python3'
+	// from '/usr/bin/python3 foo.py'). Only populated when tool is 'bash' and
+	// input.command is present; null otherwise, including when the command is empty
+	// or consists entirely of env-var assignments.
+	Bin *string `json:"bin,omitempty" yaml:"bin,omitempty" mapstructure:"bin,omitempty"`
+
 	// The AI coding tool that invoked this hook binary, detected from environment
 	// variables and stdin format. Defaults to 'unknown' when detection fails.
 	Caller CallerKind `json:"caller" yaml:"caller" mapstructure:"caller"`

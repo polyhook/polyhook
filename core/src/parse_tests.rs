@@ -1,4 +1,4 @@
-use super::parse_event;
+use super::{extract_bin, is_env_assignment, parse_event};
 use crate::CallerKind;
 use serde_json::json;
 
@@ -357,4 +357,85 @@ fn infers_tool_before_for_unrecognized_event_name_with_tool() {
     }));
     assert_eq!(evt.event.to_string(), "tool:before");
     assert_eq!(evt.tool.as_deref(), Some("bash"));
+}
+
+// ---------------------------------------------------------------------------
+// `bin` extraction (issue #13)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn is_env_assignment_accepts_valid_key() {
+    assert!(is_env_assignment("GIT_DIR=.git"));
+    assert!(is_env_assignment("FOO=bar"));
+    assert!(is_env_assignment("_X=1"));
+    assert!(is_env_assignment("FOO=")); // empty value is still an assignment
+}
+
+#[test]
+fn is_env_assignment_rejects_invalid_key() {
+    assert!(!is_env_assignment("git")); // no '='
+    assert!(!is_env_assignment("=foo")); // empty key
+    assert!(!is_env_assignment("1FOO=bar")); // key starts with digit
+    assert!(!is_env_assignment("FOO-BAR=baz")); // invalid char in key
+    assert!(!is_env_assignment("/usr/bin/python3")); // no '='
+}
+
+#[test]
+fn extract_bin_examples_table() {
+    assert_eq!(extract_bin("ls -la").as_deref(), Some("ls"));
+    assert_eq!(extract_bin("git commit -m msg").as_deref(), Some("git"));
+    assert_eq!(
+        extract_bin("GIT_DIR=.git git commit").as_deref(),
+        Some("git")
+    );
+    assert_eq!(
+        extract_bin("/usr/bin/python3 foo.py").as_deref(),
+        Some("/usr/bin/python3")
+    );
+    assert_eq!(extract_bin("FOO=bar"), None);
+    assert_eq!(extract_bin(""), None);
+    assert_eq!(
+        extract_bin("FOO=bar BAZ=qux git commit").as_deref(),
+        Some("git")
+    );
+}
+
+#[test]
+fn parse_event_populates_bin_for_bash_tool() {
+    let evt = parse_value(json!({
+        "tool_name": "Bash",
+        "tool_input": { "command": "GIT_DIR=.git git commit -m msg" },
+    }));
+    assert_eq!(evt.tool.as_deref(), Some("bash"));
+    assert_eq!(evt.bin.as_deref(), Some("git"));
+}
+
+#[test]
+fn parse_event_bin_is_none_for_non_bash_tool() {
+    let evt = parse_value(json!({
+        "tool_name": "Read",
+        "tool_input": { "file_path": "/tmp/foo.txt" },
+    }));
+    assert_eq!(evt.tool.as_deref(), Some("read_file"));
+    assert!(evt.bin.is_none());
+}
+
+#[test]
+fn parse_event_bin_is_none_when_command_is_entirely_env_assignments() {
+    let evt = parse_value(json!({
+        "tool_name": "Bash",
+        "tool_input": { "command": "FOO=bar" },
+    }));
+    assert_eq!(evt.tool.as_deref(), Some("bash"));
+    assert!(evt.bin.is_none());
+}
+
+#[test]
+fn parse_event_bin_is_none_when_bash_has_no_command() {
+    let evt = parse_value(json!({
+        "tool_name": "Bash",
+        "tool_input": { "not_command": "ls" },
+    }));
+    assert_eq!(evt.tool.as_deref(), Some("bash"));
+    assert!(evt.bin.is_none());
 }

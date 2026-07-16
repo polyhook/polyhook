@@ -198,6 +198,7 @@ class TestHookEvent:
         ev = HookEvent(
             event="tool:before",
             tool="bash",
+            bin="ls",
             input={"command": "ls"},
             output=None,
             session_id="sess_abc",
@@ -206,6 +207,7 @@ class TestHookEvent:
         )
         assert ev.event == "tool:before"
         assert ev.tool == "bash"
+        assert ev.bin == "ls"
         assert ev.input == {"command": "ls"}
         assert ev.output is None
         assert ev.session_id == "sess_abc"
@@ -218,6 +220,7 @@ class TestHookEvent:
         ev = HookEvent(
             event="session:start",
             tool=None,
+            bin=None,
             input=None,
             output=None,
             session_id="sess_001",
@@ -225,6 +228,7 @@ class TestHookEvent:
             caller="cursor",
         )
         assert ev.tool is None
+        assert ev.bin is None
         assert ev.input is None
         assert ev.agent_id is None
 
@@ -239,6 +243,7 @@ class TestRead:
         base = {
             "event": "tool:before",
             "tool": "bash",
+            "bin": "git",
             "input": {"command": "echo hi"},
             "output": None,
             "sessionId": "sess_123",
@@ -257,6 +262,7 @@ class TestRead:
             event = read()
         assert event.event == "tool:before"
         assert event.tool == "bash"
+        assert event.bin == "git"
         assert event.input == {"command": "echo hi"}
         assert event.session_id == "sess_123"
         assert event.agent_id == "agent_abc"
@@ -265,14 +271,16 @@ class TestRead:
     def test_optional_fields_absent(self):
         from polyhook import read
 
-        d = self._event_dict(tool=None, input=None, agentId=None)
+        d = self._event_dict(tool=None, bin=None, input=None, agentId=None)
         del d["tool"]
+        del d["bin"]
         del d["input"]
         del d["agentId"]
         _patch_wasm(d)
         with patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"{}"))):
             event = read()
         assert event.tool is None
+        assert event.bin is None
         assert event.input is None
         assert event.agent_id is None
 

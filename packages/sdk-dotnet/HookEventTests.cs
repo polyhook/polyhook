@@ -78,5 +78,23 @@ public class HookEventTests
         Assert.Null(evt.Input);
         Assert.Null(evt.Output);
         Assert.Null(evt.AgentId);
+        Assert.Null(evt.Bin);
+    }
+
+    [Fact]
+    public void Deserialise_Bin_PopulatedForBashCommand()
+    {
+        var json = """
+            {
+              "event":     "tool:before",
+              "tool":      "bash",
+              "bin":       "git",
+              "input":     { "command": "GIT_DIR=.git git commit -m msg" },
+              "sessionId": "sess-abc",
+              "caller":    "claude-code"
+            }
+            """;
+        var evt = JsonSerializer.Deserialize<HookEvent>(json, s_opts)!;
+        Assert.Equal("git", evt.Bin);
     }
 }
