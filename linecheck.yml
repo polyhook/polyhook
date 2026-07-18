@@ -1,0 +1,54 @@
+rules:
+  # Test files naturally run longer than source; give them more room.
+  - pattern: "**/*_test.go"
+    warn: 400
+    error: 1000
+  - pattern: "**/test_*.py"
+    warn: 400
+    error: 1000
+  - pattern: "**/*.test.ts"
+    warn: 400
+    error: 1000
+  - pattern: "**/*_tests.rs"
+    warn: 400
+    error: 1000
+  - pattern: "**/*Tests.cs"
+    warn: 400
+    error: 1000
+
+  # Rust core includes the WASM FFI bridge, which runs a bit longer than
+  # typical Rust source; give it slightly more headroom than the default.
+  - pattern: "**/*.rs"
+    warn: 200
+    error: 500
+
+  - pattern: "**/*.go"
+    warn: 200
+    error: 400
+  - pattern: "**/*.ts"
+    warn: 200
+    error: 400
+  - pattern: "**/*.cs"
+    warn: 200
+    error: 400
+  - pattern: "**/*.py"
+    warn: 200
+    error: 400
+
+  # Static markup, not logic — judge it by a much longer yardstick.
+  - pattern: "**/*.html"
+    warn: 400
+    error: 1200
+
+exclude:
+  - "**/generated/**"
+  - "**/node_modules/**"
+  - "**/target/**"
+  - "**/dist/**"
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/*.wasm"
+  - "**/*.lock"
+  - "**/pnpm-lock.yaml"
+  - "**/uv.lock"
+  - "**/go.sum"
