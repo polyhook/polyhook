@@ -50,24 +50,49 @@ fn cc_unknown_falls_through() {
 
 // Cursor — all arms
 #[test]
+fn cur_before_shell_execution() {
+    assert_eq!(
+        normalize_event("beforeShellExecution", &CallerKind::Cursor),
+        "tool:before"
+    );
+}
+#[test]
+fn cur_pre_tool_use() {
+    assert_eq!(
+        normalize_event("preToolUse", &CallerKind::Cursor),
+        "tool:before"
+    );
+}
+#[test]
+fn cur_after_shell_execution() {
+    assert_eq!(
+        normalize_event("afterShellExecution", &CallerKind::Cursor),
+        "tool:after"
+    );
+}
+#[test]
 fn cur_session_start() {
     assert_eq!(
-        normalize_event("SessionStart", &CallerKind::Cursor),
+        normalize_event("sessionStart", &CallerKind::Cursor),
         "session:start"
     );
 }
 #[test]
 fn cur_session_end() {
     assert_eq!(
-        normalize_event("SessionEnd", &CallerKind::Cursor),
+        normalize_event("sessionEnd", &CallerKind::Cursor),
         "session:stop"
     );
 }
 #[test]
-fn cur_notification() {
+fn cur_stop() {
+    assert_eq!(normalize_event("stop", &CallerKind::Cursor), "session:stop");
+}
+#[test]
+fn cur_subagent_stop() {
     assert_eq!(
-        normalize_event("Notification", &CallerKind::Cursor),
-        "notification"
+        normalize_event("subagentStop", &CallerKind::Cursor),
+        "agent:stop"
     );
 }
 #[test]
