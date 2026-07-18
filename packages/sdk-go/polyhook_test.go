@@ -148,11 +148,13 @@ func TestCallerKindConstants(t *testing.T) {
 
 func TestHookEventUnmarshal(t *testing.T) {
 	tool := "bash"
+	bin := "git"
 	agentID := "agent_xyz"
 	raw := `{
 		"event":     "tool:before",
 		"tool":      "bash",
-		"input":     {"command": "ls -la"},
+		"bin":       "git",
+		"input":     {"command": "GIT_DIR=.git git commit -m msg"},
 		"sessionId": "sess_abc",
 		"agentId":   "agent_xyz",
 		"caller":    "claude-code"
@@ -167,6 +169,9 @@ func TestHookEventUnmarshal(t *testing.T) {
 	if ev.Tool == nil || *ev.Tool != tool {
 		t.Errorf("Tool = %v; want %q", ev.Tool, tool)
 	}
+	if ev.Bin == nil || *ev.Bin != bin {
+		t.Errorf("Bin = %v; want %q", ev.Bin, bin)
+	}
 	if ev.SessionId != "sess_abc" {
 		t.Errorf("SessionId = %q; want sess_abc", ev.SessionId)
 	}
@@ -180,8 +185,8 @@ func TestHookEventUnmarshal(t *testing.T) {
 	if !ok {
 		t.Fatalf("Input = %T; want map[string]interface{}", ev.Input)
 	}
-	if cmd, ok := input["command"]; !ok || cmd != "ls -la" {
-		t.Errorf("Input[command] = %v; want ls -la", cmd)
+	if cmd, ok := input["command"]; !ok || cmd != "GIT_DIR=.git git commit -m msg" {
+		t.Errorf("Input[command] = %v; want GIT_DIR=.git git commit -m msg", cmd)
 	}
 }
 
@@ -193,6 +198,9 @@ func TestHookEventOptionalFields(t *testing.T) {
 	}
 	if ev.Tool != nil {
 		t.Errorf("Tool should be nil for session:start; got %q", *ev.Tool)
+	}
+	if ev.Bin != nil {
+		t.Errorf("Bin should be nil; got %q", *ev.Bin)
 	}
 	if ev.AgentId != nil {
 		t.Errorf("AgentId should be nil; got %q", *ev.AgentId)
