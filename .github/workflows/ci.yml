@@ -109,6 +109,17 @@ jobs:
           path: packages/sdk-dotnet
       - run: dotnet test packages/sdk-dotnet/PolyhookTests
 
+  # ── Line count ──────────────────────────────────────────────────────────────
+  linecheck:
+    name: Line Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install linecheck
+      - run: linecheck .
+
   # ── Spell check ─────────────────────────────────────────────────────────────
   spell:
     name: Spell Check
