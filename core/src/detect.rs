@@ -18,6 +18,7 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             "amp" => return CallerKind::Amp,
             "gemini-cli" | "geminicli" => return CallerKind::GeminiCli,
             "hermes" | "hermes-agent" | "hermesagent" => return CallerKind::Hermes,
+            "pi" => return CallerKind::Pi,
             _ => {}
         }
     }

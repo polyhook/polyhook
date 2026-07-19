@@ -15,6 +15,7 @@
         "amp",
         "gemini-cli",
         "hermes",
+        "pi",
         "unknown"
       ]
     },

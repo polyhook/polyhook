@@ -121,6 +121,7 @@ public class PolyhookTests : IDisposable
     [InlineData("windsurf",    CallerKind.Windsurf)]
     [InlineData("cline",       CallerKind.Cline)]
     [InlineData("amp",         CallerKind.Amp)]
+    [InlineData("pi",          CallerKind.Pi)]
     [InlineData("unknown",     CallerKind.Unknown)]
     public async Task ReadAsync_DeserialisesCaller_ForAllKnownCallers(
         string callerSlug, CallerKind expectedCaller)

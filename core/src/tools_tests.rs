@@ -14,6 +14,10 @@ fn claude_ls() {
     assert_eq!(normalize_tool("ls", &CallerKind::ClaudeCode), "list_dir");
 }
 #[test]
+fn pi_ls() {
+    assert_eq!(normalize_tool("ls", &CallerKind::Pi), "list_dir");
+}
+#[test]
 fn claude_grep() {
     assert_eq!(normalize_tool("grep", &CallerKind::ClaudeCode), "grep");
 }
@@ -253,6 +257,10 @@ fn claude_unknown_falls_through() {
         normalize_tool("no_such_tool", &CallerKind::ClaudeCode),
         "no_such_tool"
     );
+}
+#[test]
+fn pi_unknown_falls_through() {
+    assert_eq!(normalize_tool("no_such_tool", &CallerKind::Pi), "no_such_tool");
 }
 #[test]
 fn cursor_unknown_falls_through() {

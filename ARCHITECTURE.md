@@ -67,7 +67,7 @@ Changing a field in `core/schema.json` and rebuilding propagates the change to e
 
 `core` is the single source of truth. It handles:
 
-- **Caller detection** — identifies which AI tool invoked the binary from stdin shape and environment variables
+- **Caller detection** — identifies which AI tool invoked the binary from stdin shape and environment variables; Pi uses the Claude Code-compatible payload format, so set `POLYHOOK_CALLER=pi` if you want the caller labeled explicitly
 - **Event normalization** — maps vendor-specific event/tool names to the canonical polyhook schema
 - **Deserialization** — parses the caller's stdin JSON into a `HookEvent`
 - **Serialization** — encodes a `HookResponse` into the format the caller expects on stdout

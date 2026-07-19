@@ -32,6 +32,7 @@ const CallerKindCline CallerKind = "cline"
 const CallerKindCursor CallerKind = "cursor"
 const CallerKindGeminiCli CallerKind = "gemini-cli"
 const CallerKindHermes CallerKind = "hermes"
+const CallerKindPi CallerKind = "pi"
 const CallerKindUnknown CallerKind = "unknown"
 const CallerKindWindsurf CallerKind = "windsurf"
 
@@ -156,6 +157,7 @@ var enumValues_CallerKind = []interface{}{
 	"amp",
 	"gemini-cli",
 	"hermes",
+	"pi",
 	"unknown",
 }
 

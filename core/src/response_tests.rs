@@ -7,6 +7,11 @@ fn claude_code_approve() {
     let val = serialize_response(&HookResponse::approve(), &CallerKind::ClaudeCode);
     assert_eq!(val, json!({}));
 }
+#[test]
+fn pi_approve() {
+    let val = serialize_response(&HookResponse::approve(), &CallerKind::Pi);
+    assert_eq!(val, json!({}));
+}
 
 #[test]
 fn claude_code_block() {
@@ -23,6 +28,32 @@ fn claude_code_pre_tool_use_block_uses_hook_specific_output() {
     let val = serialize_response_with_event(
         &HookResponse::block("not allowed"),
         CallerKind::ClaudeCode,
+        Some(HookEventEvent::ToolBefore),
+    );
+    assert_eq!(
+        val["hookSpecificOutput"]["hookEventName"],
+        json!("PreToolUse")
+    );
+    assert_eq!(
+        val["hookSpecificOutput"]["permissionDecision"],
+        json!("deny")
+    );
+    assert_eq!(
+        val["hookSpecificOutput"]["permissionDecisionReason"],
+        json!("not allowed")
+    );
+    assert_eq!(
+        val["hookSpecificOutput"]["additionalContext"],
+        serde_json::Value::Null
+    );
+}
+#[test]
+fn pi_pre_tool_use_block_uses_hook_specific_output() {
+    use crate::response::serialize_response_with_event;
+    use crate::types::HookEventEvent;
+    let val = serialize_response_with_event(
+        &HookResponse::block("not allowed"),
+        CallerKind::Pi,
         Some(HookEventEvent::ToolBefore),
     );
     assert_eq!(

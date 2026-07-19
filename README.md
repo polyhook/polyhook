@@ -8,7 +8,7 @@
 
 polyhook is a multi-language SDK for AI coding agent hooks. Instead of parsing each tool's bespoke stdin/stdout format, you call polyhook — it detects which tool invoked your binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects.
 
-Your hook binary runs unchanged whether Claude Code, Cursor, Windsurf, Cline, or Amp invoked it.
+Your hook binary runs unchanged whether Claude Code, Cursor, Windsurf, Cline, Amp, or Pi invoked it.
 
 ---
 
@@ -144,9 +144,12 @@ Examples: [packages/sdk-python/examples/](packages/sdk-python/examples/)
 | [Windsurf](https://windsurf.ai) | ✅ Supported |
 | [Cline](https://github.com/cline/cline) | ✅ Supported |
 | [Amp](https://ampcode.com) | ✅ Supported |
+| [Pi](https://pi.dev) | ✅ Supported |
 | [Continue](https://continue.dev) | 🚧 In progress |
 | [Aider](https://aider.chat) | 🚧 In progress |
 | [Copilot](https://github.com/features/copilot) | 📋 Planned |
+
+Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
 
 Source of truth: [tools.toml](tools.toml) — hook documentation links: [docs/tool-names.md](docs/tool-names.md)
 

@@ -26,6 +26,9 @@ public enum CallerKind
     [JsonStringEnumMemberName("amp")]
     Amp,
 
+    [JsonStringEnumMemberName("pi")]
+    Pi,
+
     [JsonStringEnumMemberName("unknown")]
     Unknown,
 }
