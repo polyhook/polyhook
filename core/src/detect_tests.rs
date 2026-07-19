@@ -161,6 +161,16 @@ fn polyhook_caller_hermes_agent_alias_detected() {
 }
 
 #[test]
+fn polyhook_caller_pi_detected() {
+    let val = serde_json::json!({});
+    with_clean_env(|| {
+        temp_env::with_var("POLYHOOK_CALLER", Some("pi"), || {
+            assert_eq!(detect_caller(&val), CallerKind::Pi);
+        });
+    });
+}
+
+#[test]
 fn gemini_cli_before_tool_heuristic() {
     let val = serde_json::json!({
         "hook_event_name": "BeforeTool",

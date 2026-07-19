@@ -53,6 +53,14 @@ homepage    = "https://github.com/NousResearch/hermes-agent"
 hooks_docs  = "https://hermes-agent.nousresearch.com/docs/user-guide/features/hooks"
 
 [[tool]]
+id          = "pi"
+name        = "Pi"
+status      = "supported"
+homepage    = "https://pi.dev"
+hooks_docs  = "https://github.com/eleqtrizit/pi-autohooks"
+hooks_notes = "Claude Code-compatible hook payloads via Pi hook packages"
+
+[[tool]]
 id          = "continue"
 name        = "Continue"
 status      = "in-progress"

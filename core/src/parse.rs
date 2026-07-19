@@ -74,7 +74,7 @@ fn str_field<'a>(val: &'a serde_json::Value, key: &str) -> Option<&'a str> {
 
 fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
     let candidates: &[&str] = match caller {
-        CallerKind::ClaudeCode => &[
+        CallerKind::ClaudeCode | CallerKind::Pi => &[
             "hook_event_name",
             "event",
             "hookEvent",
@@ -100,7 +100,7 @@ fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
 
 fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
     match caller {
-        CallerKind::ClaudeCode => str_field(val, "tool_name").map(str::to_owned),
+        CallerKind::ClaudeCode | CallerKind::Pi => str_field(val, "tool_name").map(str::to_owned),
         CallerKind::Cursor => val
             .get("toolCall")
             .and_then(|tc| tc.get("name"))
@@ -134,7 +134,7 @@ fn extract_input(
     caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
-        CallerKind::ClaudeCode => val.get("tool_input").cloned(),
+        CallerKind::ClaudeCode | CallerKind::Pi => val.get("tool_input").cloned(),
         CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("args")).cloned(),
         CallerKind::Windsurf => val.get("parameters").cloned(),
         CallerKind::Cline => val
@@ -164,7 +164,7 @@ fn extract_output(
     caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
-        CallerKind::ClaudeCode => val.get("tool_output").cloned(),
+        CallerKind::ClaudeCode | CallerKind::Pi => val.get("tool_output").cloned(),
         CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("result")).cloned(),
         CallerKind::Windsurf => val.get("result").cloned(),
         CallerKind::Cline => val

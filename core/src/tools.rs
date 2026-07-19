@@ -15,6 +15,7 @@ pub fn normalize_tool(vendor: &str, caller: &CallerKind) -> String {
         CallerKind::Amp => normalize_amp(&lower),
         CallerKind::GeminiCli => normalize_gemini_cli(&lower),
         CallerKind::Hermes => normalize_hermes(&lower),
+        CallerKind::Pi => normalize_claude_code(&lower),
         CallerKind::Unknown => None,
     };
 

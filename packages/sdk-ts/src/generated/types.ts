@@ -12,15 +12,12 @@
  * via the `definition` "CallerKind".
  */
 export type CallerKind =
-  | "claude-code"
-  | "cursor"
-  | "windsurf"
-  | "cline"
-  | "amp"
-  | "gemini-cli"
-  | "hermes"
-  | "unknown";
-
+  "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "unknown";
+/**
+ * The AI coding tool that invoked this hook binary, detected from environment variables and stdin format. Defaults to 'unknown' when detection fails.
+ */
+export type CallerKind =
+  "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "unknown";
 /**
  * The response a hook handler returns to polyhook.wasm, which translates it into the format expected by the detected caller. Discriminated on the 'action' field.
  *
@@ -45,13 +42,7 @@ export interface HookEvent {
   /**
    * Normalized event kind. One of: 'tool:before' (about to run a tool), 'tool:after' (tool finished), 'session:start' (new agent session opened), 'session:stop' (agent session closed), 'agent:stop' (sub-agent returned), 'notification' (informational message, no response required).
    */
-  event:
-    | "tool:before"
-    | "tool:after"
-    | "session:start"
-    | "session:stop"
-    | "agent:stop"
-    | "notification";
+  event: "tool:before" | "tool:after" | "session:start" | "session:stop" | "agent:stop" | "notification";
   /**
    * Normalized tool name (e.g. 'bash', 'write_file', 'read_file'). Present for tool:before and tool:after events; null for all other event kinds.
    */

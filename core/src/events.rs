@@ -12,6 +12,7 @@ pub fn normalize_event(vendor: &str, caller: &CallerKind) -> String {
         CallerKind::Amp => normalize_amp_event(vendor),
         CallerKind::GeminiCli => normalize_gemini_cli_event(vendor),
         CallerKind::Hermes => normalize_hermes_event(vendor),
+        CallerKind::Pi => normalize_claude_code_event(vendor),
         CallerKind::Unknown => None,
     };
 

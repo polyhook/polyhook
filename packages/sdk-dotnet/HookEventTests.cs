@@ -61,6 +61,7 @@ public class HookEventTests
     [InlineData("windsurf",    CallerKind.Windsurf)]
     [InlineData("cline",       CallerKind.Cline)]
     [InlineData("amp",         CallerKind.Amp)]
+    [InlineData("pi",          CallerKind.Pi)]
     [InlineData("unknown",     CallerKind.Unknown)]
     public void CallerKind_AllValues_Deserialise(string raw, CallerKind expected)
     {

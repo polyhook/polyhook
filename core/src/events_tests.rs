@@ -23,6 +23,10 @@ fn cc_startup() {
     );
 }
 #[test]
+fn pi_startup() {
+    assert_eq!(normalize_event("Startup", &CallerKind::Pi), "session:start");
+}
+#[test]
 fn cc_stop() {
     assert_eq!(
         normalize_event("Stop", &CallerKind::ClaudeCode),
@@ -46,6 +50,10 @@ fn cc_notification() {
 #[test]
 fn cc_unknown_falls_through() {
     assert_eq!(normalize_event("Bogus", &CallerKind::ClaudeCode), "Bogus");
+}
+#[test]
+fn pi_unknown_falls_through() {
+    assert_eq!(normalize_event("Bogus", &CallerKind::Pi), "Bogus");
 }
 
 // Cursor — all arms

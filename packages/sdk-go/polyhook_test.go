@@ -133,6 +133,7 @@ func TestCallerKindConstants(t *testing.T) {
 		{"Amp", polyhook.CallerKindAmp, "amp"},
 		{"GeminiCli", polyhook.CallerKindGeminiCli, "gemini-cli"},
 		{"Hermes", polyhook.CallerKindHermes, "hermes"},
+		{"Pi", polyhook.CallerKindPi, "pi"},
 		{"Unknown", polyhook.CallerKindUnknown, "unknown"},
 	}
 	for _, tc := range cases {

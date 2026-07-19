@@ -10,6 +10,7 @@ TOOLS_TABLE="| Tool | Status |
 | [Windsurf](https://windsurf.ai) | ✅ Supported |
 | [Cline](https://github.com/cline/cline) | ✅ Supported |
 | [Amp](https://ampcode.com) | ✅ Supported |
+| [Pi](https://pi.dev) | ✅ Supported |
 | [Continue](https://continue.dev) | 🚧 In progress |
 | [Aider](https://aider.chat) | 🚧 In progress |
 | [Copilot](https://github.com/features/copilot) | 📋 Planned |"
@@ -26,7 +27,7 @@ write_readme "$ROOT/packages/sdk-ts/README.md" "# polyhook — TypeScript / Java
 
 **Write AI coding agent hooks once. Run them everywhere.**
 
-polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, or Amp invoked it.
+polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, Amp, or Pi invoked it.
 
 Ships as dual ESM + CJS — works with \`import\` (ESM) and \`require\` (CJS) out of the box.
 
@@ -85,6 +86,8 @@ More examples: [examples/](examples/)
 
 $TOOLS_TABLE
 
+Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+
 ## Documentation
 
 Full docs and API reference: <https://github.com/tupe12334/polyhook>
@@ -98,7 +101,7 @@ write_readme "$ROOT/packages/sdk-rust/README.md" "# polyhook — Rust SDK
 
 **Write AI coding agent hooks once. Run them everywhere.**
 
-polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, or Amp invoked it.
+polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, Amp, or Pi invoked it.
 
 The Rust SDK links \`polyhook-core\` natively — no WASM overhead.
 
@@ -152,6 +155,8 @@ More examples: [examples/](examples/)
 
 $TOOLS_TABLE
 
+Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+
 ## Documentation
 
 Full docs and API reference: <https://github.com/tupe12334/polyhook>
@@ -165,7 +170,7 @@ write_readme "$ROOT/packages/sdk-go/README.md" "# polyhook — Go SDK
 
 **Write AI coding agent hooks once. Run them everywhere.**
 
-polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, or Amp invoked it.
+polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, Amp, or Pi invoked it.
 
 ## Install
 
@@ -210,6 +215,8 @@ More examples: [examples/](examples/)
 
 $TOOLS_TABLE
 
+Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+
 ## Documentation
 
 Full docs and API reference: <https://github.com/tupe12334/polyhook>
@@ -223,7 +230,7 @@ write_readme "$ROOT/packages/sdk-dotnet/README.md" "# polyhook — C# / .NET SDK
 
 **Write AI coding agent hooks once. Run them everywhere.**
 
-polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, or Amp invoked it.
+polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, Amp, or Pi invoked it.
 
 ## Install
 
@@ -257,6 +264,8 @@ More examples: [examples/](examples/)
 
 $TOOLS_TABLE
 
+Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+
 ## Documentation
 
 Full docs and API reference: <https://github.com/tupe12334/polyhook>
@@ -270,7 +279,7 @@ write_readme "$ROOT/packages/sdk-python/README.md" "# polyhook — Python SDK
 
 **Write AI coding agent hooks once. Run them everywhere.**
 
-polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, or Amp invoked it.
+polyhook detects which AI coding tool invoked your hook binary, deserializes the event into a normalized struct, and serializes your response back in the format that tool expects. Your hook runs unchanged whether Claude Code, Cursor, Windsurf, Cline, Amp, or Pi invoked it.
 
 ## Install
 
@@ -301,6 +310,8 @@ More examples: [examples/](examples/)
 ## Supported Tools
 
 $TOOLS_TABLE
+
+Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
 
 ## Documentation
 
