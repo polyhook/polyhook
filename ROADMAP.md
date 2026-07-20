@@ -2,10 +2,10 @@
 
 ## Now — Foundation ✅
 
-Core architecture is stable. WASM module handles detection, normalization, and serialization for five tools. All five language SDKs ship.
+Core architecture is stable. WASM module handles detection, normalization, and serialization for eight tools. All five language SDKs ship.
 
 - **Core:** Rust → WASM, caller detection, event + tool normalization, response serialization
-- **Tools:** Claude Code, Cursor, Windsurf, Cline, Amp
+- **Tools:** Claude Code, Cursor, Windsurf, Cline, Amp, Gemini CLI, Hermes Agent, Pi
 - **SDKs:** TypeScript, Rust, Go, C#, Python
 - **Types:** auto-generated from `core/schema.json` across every SDK
 
