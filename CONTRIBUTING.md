@@ -9,8 +9,8 @@ cd polyhook
 # Rust toolchain + wasm target
 rustup target add wasm32-unknown-unknown
 
-# Node (for TypeScript SDK)
-npm install
+# Node (for TypeScript SDK) — uses pnpm, not npm
+cd packages/sdk-ts && pnpm install && cd ../..
 
 # Git hooks (formatting, spell check, README generation, and coverage checks on push)
 make install-hooks
@@ -46,18 +46,18 @@ packages/sdk-python/    Python bindings
 make wasm
 
 # Build all SDKs
-cargo build                  # Rust (native)
-npm run build -w sdk-ts      # TypeScript
-go build ./...               # Go (from packages/sdk-go)
+cargo build                          # Rust (native)
+cd packages/sdk-ts && pnpm build     # TypeScript
+go build ./...                       # Go (from packages/sdk-go)
 dotnet build packages/sdk-dotnet
 ```
 
 ## Running Tests
 
 ```bash
-cargo test                   # Rust core + Rust SDK
-npm test -w sdk-ts           # TypeScript SDK
-go test ./...                # Go SDK (from packages/sdk-go)
+cargo test                          # Rust core + Rust SDK
+cd packages/sdk-ts && pnpm test     # TypeScript SDK
+go test ./...                       # Go SDK (from packages/sdk-go)
 dotnet test packages/sdk-dotnet
 ```
 
@@ -72,7 +72,7 @@ All changes go in `core/src/`:
 3. **`events.rs`** — add vendor → canonical event name mappings
 4. **`response.rs`** — add canonical `HookResponse` → vendor response serialization
 
-Add the tool to the supported tools table in `README.md` and `ARCHITECTURE.md`.
+Add the tool to `tools.toml`, then update the supported-tools tables in `README.md` and `FAQ.md` to match (run `make readme` to regenerate the per-SDK READMEs).
 
 Rebuild WASM after any core change — all language SDKs pick it up automatically:
 

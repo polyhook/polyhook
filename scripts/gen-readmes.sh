@@ -10,6 +10,8 @@ TOOLS_TABLE="| Tool | Status |
 | [Windsurf](https://windsurf.ai) | ✅ Supported |
 | [Cline](https://github.com/cline/cline) | ✅ Supported |
 | [Amp](https://ampcode.com) | ✅ Supported |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ Supported |
+| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | ✅ Supported |
 | [Pi](https://pi.dev) | ✅ Supported |
 | [Continue](https://continue.dev) | 🚧 In progress |
 | [Aider](https://aider.chat) | 🚧 In progress |

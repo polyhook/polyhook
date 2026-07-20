@@ -32,6 +32,8 @@ With polyhook you write the logic once. Detection and format translation happen 
 | Cline | Supported |
 | Amp | Supported |
 | Gemini CLI | Supported |
+| Hermes Agent | Supported |
+| Pi | Supported |
 | Continue | In progress |
 | Aider | In progress |
 | GitHub Copilot | Planned |
@@ -118,7 +120,7 @@ interface HookEvent {
   output?:   Record<string, unknown>;       // tool output (tool:after only)
   sessionId: string;
   agentId?:  string;                        // present only inside sub-agent context
-  caller:    "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "unknown";
+  caller:    "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "unknown";
 }
 ```
 
@@ -221,7 +223,7 @@ Yes. Set `POLYHOOK_CALLER` before invoking the hook binary:
 POLYHOOK_CALLER=cursor my-hook-binary
 ```
 
-Accepted values: `claude-code`, `cursor`, `windsurf`, `cline`, `amp`, `gemini-cli`.
+Accepted values: `claude-code`, `cursor`, `windsurf`, `cline`, `amp`, `gemini-cli`, `hermes`, `pi`.
 
 ### What happens when the caller is unknown?
 
