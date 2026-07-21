@@ -33,7 +33,11 @@ fn respond_to_writes_json_to_writer() {
 
     let json: serde_json::Value =
         serde_json::from_slice(&output).expect("output should be valid JSON");
-    assert!(json.as_object().unwrap().is_empty());
+    // CLAUDE_PRE_TOOL is a PreToolUse event, so approve() must use
+    // hookSpecificOutput.permissionDecision:"allow" to actually bypass the
+    // permission prompt rather than the passive/no-op `{}`.
+    assert_eq!(json["hookSpecificOutput"]["hookEventName"], "PreToolUse");
+    assert_eq!(json["hookSpecificOutput"]["permissionDecision"], "allow");
 }
 
 #[test]
@@ -84,8 +88,12 @@ fn respond_to_modify_uses_detected_caller() {
 
     let json: serde_json::Value =
         serde_json::from_slice(&output).expect("output should be valid JSON");
-    assert_eq!(json["decision"], "approve");
-    assert_eq!(json["tool_input"], new_input);
+    // CLAUDE_PRE_TOOL is a PreToolUse event, so the replacement input must go
+    // under hookSpecificOutput.updatedInput — PreToolUse does not read a
+    // top-level `tool_input` field.
+    assert_eq!(json["hookSpecificOutput"]["hookEventName"], "PreToolUse");
+    assert_eq!(json["hookSpecificOutput"]["permissionDecision"], "allow");
+    assert_eq!(json["hookSpecificOutput"]["updatedInput"], new_input);
 }
 
 #[test]
@@ -97,7 +105,8 @@ fn last_caller_thread_local_is_updated_by_read_from() {
     let mut output: Vec<u8> = Vec::new();
     respond_to(&mut output, &HookResponse::approve()).expect("respond_to should succeed");
     let json: serde_json::Value = serde_json::from_slice(&output).unwrap();
-    assert!(json.as_object().unwrap().is_empty());
+    // CLAUDE_PRE_TOOL is a PreToolUse event; see respond_to_writes_json_to_writer.
+    assert_eq!(json["hookSpecificOutput"]["permissionDecision"], "allow");
 
     let mut cursor2 = Cursor::new(CURSOR_BEFORE_TOOL.as_bytes());
     let event2 = read_from(&mut cursor2).expect("read_from should succeed");

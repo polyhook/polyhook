@@ -88,6 +88,89 @@ fn claude_code_post_tool_use_block_uses_decision() {
 }
 
 #[test]
+fn claude_code_pre_tool_use_approve_uses_hook_specific_output() {
+    use crate::response::serialize_response_with_event;
+    use crate::types::HookEventEvent;
+    let val = serialize_response_with_event(
+        &HookResponse::approve(),
+        CallerKind::ClaudeCode,
+        Some(HookEventEvent::ToolBefore),
+    );
+    assert_eq!(
+        val["hookSpecificOutput"]["hookEventName"],
+        json!("PreToolUse")
+    );
+    assert_eq!(
+        val["hookSpecificOutput"]["permissionDecision"],
+        json!("allow")
+    );
+    assert!(val.get("decision").is_none());
+}
+
+#[test]
+fn pi_pre_tool_use_approve_uses_hook_specific_output() {
+    use crate::response::serialize_response_with_event;
+    use crate::types::HookEventEvent;
+    let val = serialize_response_with_event(
+        &HookResponse::approve(),
+        CallerKind::Pi,
+        Some(HookEventEvent::ToolBefore),
+    );
+    assert_eq!(
+        val["hookSpecificOutput"]["permissionDecision"],
+        json!("allow")
+    );
+}
+
+#[test]
+fn claude_code_post_tool_use_approve_uses_empty_object() {
+    use crate::response::serialize_response_with_event;
+    use crate::types::HookEventEvent;
+    let val = serialize_response_with_event(
+        &HookResponse::approve(),
+        CallerKind::ClaudeCode,
+        Some(HookEventEvent::ToolAfter),
+    );
+    assert_eq!(val, json!({}));
+}
+
+#[test]
+fn claude_code_pre_tool_use_modify_uses_hook_specific_output() {
+    use crate::response::serialize_response_with_event;
+    use crate::types::HookEventEvent;
+    let new_input = json!({"command": "echo safe"});
+    let val = serialize_response_with_event(
+        &HookResponse::modify(new_input.clone()),
+        CallerKind::ClaudeCode,
+        Some(HookEventEvent::ToolBefore),
+    );
+    assert_eq!(
+        val["hookSpecificOutput"]["hookEventName"],
+        json!("PreToolUse")
+    );
+    assert_eq!(
+        val["hookSpecificOutput"]["permissionDecision"],
+        json!("allow")
+    );
+    assert_eq!(val["hookSpecificOutput"]["updatedInput"], new_input);
+    assert!(val.get("decision").is_none());
+}
+
+#[test]
+fn claude_code_post_tool_use_modify_uses_decision() {
+    use crate::response::serialize_response_with_event;
+    use crate::types::HookEventEvent;
+    let new_input = json!({"command": "echo safe"});
+    let val = serialize_response_with_event(
+        &HookResponse::modify(new_input.clone()),
+        CallerKind::ClaudeCode,
+        Some(HookEventEvent::ToolAfter),
+    );
+    assert_eq!(val["decision"], json!("approve"));
+    assert_eq!(val["tool_input"], new_input);
+}
+
+#[test]
 fn claude_code_modify() {
     let new_input = json!({"command": "echo safe"});
     let val = serialize_response(
