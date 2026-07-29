@@ -35,10 +35,25 @@ pub(crate) fn serialize_response_with_event(
 // ---------------------------------------------------------------------------
 
 fn serialize_claude_code(resp: &HookResponse, event: Option<HookEventEvent>) -> Value {
+    let is_pre_tool_use = matches!(event, Some(HookEventEvent::ToolBefore));
     match resp {
-        HookResponse::ApproveResponse(_) => json!({}),
+        HookResponse::ApproveResponse(_) => {
+            if is_pre_tool_use {
+                // PreToolUse only reads hookSpecificOutput.permissionDecision; an empty
+                // `{}` is a passive no-op (falls through to the normal permission flow)
+                // rather than an explicit allow that bypasses the confirmation prompt.
+                json!({
+                    "hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "permissionDecision": "allow"
+                    }
+                })
+            } else {
+                json!({})
+            }
+        }
         HookResponse::BlockResponse(b) => {
-            if matches!(event, Some(HookEventEvent::ToolBefore)) {
+            if is_pre_tool_use {
                 json!({
                     "hookSpecificOutput": {
                         "hookEventName": "PreToolUse",
@@ -51,7 +66,20 @@ fn serialize_claude_code(resp: &HookResponse, event: Option<HookEventEvent>) -> 
             }
         }
         HookResponse::ModifyResponse(m) => {
-            json!({ "decision": "approve", "tool_input": m.input })
+            if is_pre_tool_use {
+                // Same reasoning as BlockResponse above: PreToolUse does not read the
+                // top-level `decision`/`tool_input` fields, so the replacement input
+                // must go under hookSpecificOutput.updatedInput to actually apply.
+                json!({
+                    "hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "permissionDecision": "allow",
+                        "updatedInput": m.input
+                    }
+                })
+            } else {
+                json!({ "decision": "approve", "tool_input": m.input })
+            }
         }
     }
 }
