@@ -253,7 +253,7 @@ No. Hook binaries are short-lived processes (invoked per hook event, not per req
 
 ### Where does `polyhook.wasm` come from?
 
-Built from `core/` via `make wasm`. The artifact is committed to the repo root and bundled into each SDK package. You don't need to build it yourself unless you're changing `core`.
+Built from `core/` via `make wasm`, which copies the artifact into each SDK directory. The copies are gitignored build artifacts — except the Go SDK's `packages/sdk-go/polyhook.wasm`, which is committed for `//go:embed` — and each published SDK package bundles its copy. You don't need to build it yourself unless you're changing `core`.
 
 ### Can I use polyhook from a language not listed?
 
