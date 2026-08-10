@@ -24,6 +24,19 @@ jobs:
           path: polyhook.wasm
           retention-days: 1
 
+  # ── Rust lint ───────────────────────────────────────────────────────────────
+  lint-rust:
+    name: Lint Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
   # ── Rust ────────────────────────────────────────────────────────────────────
   test-rust:
     name: Test Rust
