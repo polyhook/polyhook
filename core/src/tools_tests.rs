@@ -260,7 +260,10 @@ fn claude_unknown_falls_through() {
 }
 #[test]
 fn pi_unknown_falls_through() {
-    assert_eq!(normalize_tool("no_such_tool", &CallerKind::Pi), "no_such_tool");
+    assert_eq!(
+        normalize_tool("no_such_tool", &CallerKind::Pi),
+        "no_such_tool"
+    );
 }
 #[test]
 fn cursor_unknown_falls_through() {
