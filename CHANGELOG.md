@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Refreshed the embedded `polyhook.wasm` artifact bundled with the Go SDK.
 
+### Added
+
+- `make wasm` now runs `scripts/verify-wasm.mjs` against the freshly compiled
+  `polyhook.wasm` binary, right after building it and before copying it into
+  any SDK directory, asserting a Claude Code `PreToolUse` block is serialized
+  as `hookSpecificOutput.permissionDecision: "deny"`. Since both CI and the
+  release workflow build wasm via `make wasm`, this exercises the actual
+  `wasm32-unknown-unknown` artifact end-to-end wherever it's built, catching a
+  stale or corrupted build artifact that source-level `cargo test`/SDK unit
+  tests (which run against natively-compiled or mocked code) cannot see — the
+  gap that let `v0.1.11`'s npm/PyPI packages ship the legacy
+  `decision: "block"` format ([#53](https://github.com/polyhook/polyhook/issues/53)).
+
 ## [0.1.11] - 2026-06-19
 
 ### Fixed
