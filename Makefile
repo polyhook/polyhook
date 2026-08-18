@@ -122,11 +122,13 @@ schema/python: $(SCHEMA)
 	@echo "Done: $(PYTHON_OUT)"
 
 # ── wasm ──────────────────────────────────────────────────────────────────────
-## wasm: Build polyhook.wasm and copy to all SDK directories
+## wasm: Build polyhook.wasm, verify it against source, and copy to all SDK directories
 wasm:
 	@echo "Building polyhook.wasm…"
 	cargo build --release --target wasm32-unknown-unknown -p polyhook-core
 	cp target/wasm32-unknown-unknown/release/polyhook_core.wasm $(WASM_OUT)
+	@echo "Verifying $(WASM_OUT) matches source (#53)…"
+	node scripts/verify-wasm.mjs $(WASM_OUT)
 	cp $(WASM_OUT) packages/sdk-ts/polyhook.wasm
 	cp $(WASM_OUT) packages/sdk-go/polyhook.wasm
 	cp $(WASM_OUT) packages/sdk-python/src/polyhook/polyhook.wasm
