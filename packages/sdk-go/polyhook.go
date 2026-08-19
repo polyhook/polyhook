@@ -298,9 +298,10 @@ func ReadFrom(r io.Reader) (*HookEvent, error) {
 		Error string `json:"error"`
 	}
 	if jsonErr := json.Unmarshal(payload, &errCheck); jsonErr == nil && errCheck.Error != "" {
-		// polyhook.wasm still tries a best-effort parse in this case;
-		// the caller falls back to "unknown". Log but do not abort.
-		_ = errCheck.Error
+		// polyhook.wasm returns only {"error": ...} for unparsable stdin —
+		// there is no event to fall back to, so surface it rather than
+		// handing the hook a zero-value HookEvent that fails open.
+		return nil, fmt.Errorf("polyhook: parse: %s", errCheck.Error)
 	}
 
 	var event HookEvent

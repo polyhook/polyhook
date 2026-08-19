@@ -561,22 +561,21 @@ func TestGetRuntime_MissingExport(t *testing.T) {
 	}
 }
 
-// TestReadFrom_WASMErrorField verifies that ReadFrom succeeds even when the
-// payload contains a non-empty "error" field alongside a valid HookEvent
-// structure. This exercises the best-effort error-logging branch in ReadFrom.
+// TestReadFrom_WASMErrorField verifies that a WASM-level {"error": ...}
+// payload (what polyhook.wasm returns for unparsable stdin) is surfaced as an
+// error instead of a zero-value HookEvent that would fail open.
 func TestReadFrom_WASMErrorField(t *testing.T) {
 	usePassthroughWASM()
 	defer resetRuntime()
 
-	// The passthrough shim echoes input verbatim. The payload has both an
-	// "error" field (triggering the errCheck branch) and valid HookEvent fields.
-	input := `{"error":"best-effort parse failed","event":"notification","sessionId":"s1","caller":"unknown"}`
+	// The passthrough shim echoes input verbatim.
+	input := `{"error":"JSON parse error: EOF while parsing a value"}`
 	ev, err := polyhook.ReadFrom(strings.NewReader(input))
-	if err != nil {
-		t.Fatalf("ReadFrom with error field: %v", err)
+	if err == nil {
+		t.Fatalf("expected error for WASM error payload; got event %+v", ev)
 	}
-	if ev.Event != "notification" {
-		t.Errorf("Event = %q; want notification", ev.Event)
+	if !strings.Contains(err.Error(), "JSON parse error") {
+		t.Errorf("error should carry the WASM message; got: %v", err)
 	}
 }
 

@@ -228,6 +228,28 @@ describe("read() — Claude Code payloads", () => {
   });
 });
 
+describe("read() — unparsable stdin", () => {
+  afterEach(() => {
+    _setWasmInstance(null);
+  });
+
+  test("rejects when the core reports a parse error instead of an event", async () => {
+    // Mirror polyhook.wasm: unparsable stdin yields {"error": "..."} only.
+    const wasm = buildMockWasm(
+      () =>
+        ({
+          error: "JSON parse error: expected value at line 1 column 1",
+        }) as unknown as HookEvent,
+    );
+    _setWasmInstance(wasm);
+    mockStdin("not json");
+
+    await expect(read()).rejects.toThrow(
+      "polyhook.wasm parse error: JSON parse error: expected value at line 1 column 1",
+    );
+  });
+});
+
 describe("read() — Cursor payloads", () => {
   afterEach(() => {
     _setWasmInstance(null);
