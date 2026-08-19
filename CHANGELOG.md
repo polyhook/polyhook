@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Claude Code lifecycle hooks (`Stop`, `SubagentStop`, `UserPromptSubmit`,
+  `PreCompact`, `PermissionRequest`) are now detected as `claude-code`
+  instead of `unknown`, and `SessionStart`/`SessionEnd` normalize to
+  `session:start`/`session:stop`. `CLAUDE_PROJECT_DIR` is recognised as a
+  Claude Code env marker ([#63]).
+
 ## [0.2.0] - 2026-09-26
 
 ### Added
@@ -152,6 +160,7 @@ v0.1.2.
 [#36]: https://github.com/polyhook/polyhook/pull/36
 [#37]: https://github.com/polyhook/polyhook/pull/37
 [#38]: https://github.com/polyhook/polyhook/pull/38
+[#63]: https://github.com/polyhook/polyhook/issues/63
 [#73]: https://github.com/polyhook/polyhook/pull/73
 [#74]: https://github.com/polyhook/polyhook/pull/74
 [#75]: https://github.com/polyhook/polyhook/pull/75

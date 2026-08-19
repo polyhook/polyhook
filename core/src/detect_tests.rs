@@ -4,6 +4,7 @@ use crate::CallerKind;
 const AGENT_ENV_VARS: &[&str] = &[
     "POLYHOOK_CALLER",
     "CLAUDE_CODE_VERSION",
+    "CLAUDE_PROJECT_DIR",
     "CURSOR_SESSION_ID",
     "WINDSURF_SESSION_ID",
     "CLINE_SESSION_ID",
@@ -227,5 +228,47 @@ fn hermes_session_start_heuristic() {
     });
     with_clean_env(|| {
         assert_eq!(detect_caller(&val), CallerKind::Hermes);
+    });
+}
+
+#[test]
+fn claude_project_dir_env_var_detected() {
+    let val = serde_json::json!({});
+    with_clean_env(|| {
+        temp_env::with_var("CLAUDE_PROJECT_DIR", Some("/proj"), || {
+            assert_eq!(detect_caller(&val), CallerKind::ClaudeCode);
+        });
+    });
+}
+
+#[test]
+fn claude_code_lifecycle_event_names_detected_without_tool_fields() {
+    with_clean_env(|| {
+        for name in [
+            "PreToolUse",
+            "PostToolUse",
+            "Stop",
+            "SubagentStop",
+            "UserPromptSubmit",
+            "PreCompact",
+            "PermissionRequest",
+        ] {
+            let val = serde_json::json!({"hook_event_name": name, "session_id": "s1"});
+            assert_eq!(detect_caller(&val), CallerKind::ClaudeCode, "{name}");
+        }
+    });
+}
+
+#[test]
+fn claude_code_session_start_with_project_dir_env_beats_gemini_heuristic() {
+    let val = serde_json::json!({
+        "hook_event_name": "SessionStart",
+        "session_id": "s1",
+        "source": "startup"
+    });
+    with_clean_env(|| {
+        temp_env::with_var("CLAUDE_PROJECT_DIR", Some("/proj"), || {
+            assert_eq!(detect_caller(&val), CallerKind::ClaudeCode);
+        });
     });
 }
