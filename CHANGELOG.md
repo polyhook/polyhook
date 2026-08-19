@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- TypeScript and Go `read()` now fail with an error when `polyhook.wasm`
+  reports unparsable stdin (`{"error": …}`) instead of returning an empty
+  event that lets hooks fail open; matches the Python SDK ([#65]).
+
 ### Changed
 
 - Refreshed the embedded `polyhook.wasm` artifact bundled with the Go SDK.
@@ -134,3 +140,4 @@ v0.1.2.
 [#36]: https://github.com/polyhook/polyhook/pull/36
 [#37]: https://github.com/polyhook/polyhook/pull/37
 [#38]: https://github.com/polyhook/polyhook/pull/38
+[#65]: https://github.com/polyhook/polyhook/issues/65

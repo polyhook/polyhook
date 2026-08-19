@@ -156,7 +156,15 @@ export async function read(): Promise<HookEvent> {
   wasm.dealloc(inputPtr, inputLen);
 
   const json = new TextDecoder().decode(resultBytes);
-  const event = JSON.parse(json) as HookEvent;
+  const parsed = JSON.parse(json) as HookEvent | { error: string };
+
+  // The core reports unparsable stdin as {"error": "..."} rather than a
+  // HookEvent. Surface it instead of handing the hook an event with no
+  // fields, which would silently fail open on the approve branch.
+  if ("error" in parsed) {
+    throw new Error(`polyhook.wasm parse error: ${parsed.error}`);
+  }
+  const event = parsed;
 
   // Cache the caller so respond() can include it without the caller having
   // to thread it through.
