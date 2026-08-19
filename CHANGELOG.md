@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `POLYHOOK_CALLER` and the agent env-var caller heuristics now work in the
+  WASM-backed SDKs (npm, PyPI): the core exposes a `set_env` export and the
+  TypeScript/Python shims hand it the host environment before `parse`
+  ([#61]).
+
 ### Changed
 
 - Refreshed the embedded `polyhook.wasm` artifact bundled with the Go SDK.
@@ -134,3 +141,4 @@ v0.1.2.
 [#36]: https://github.com/polyhook/polyhook/pull/36
 [#37]: https://github.com/polyhook/polyhook/pull/37
 [#38]: https://github.com/polyhook/polyhook/pull/38
+[#61]: https://github.com/polyhook/polyhook/issues/61

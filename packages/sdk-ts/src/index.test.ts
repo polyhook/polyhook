@@ -228,6 +228,32 @@ describe("read() — Claude Code payloads", () => {
   });
 });
 
+describe("read() — host environment", () => {
+  afterEach(() => {
+    _setWasmInstance(null);
+  });
+
+  test("hands process.env to the wasm set_env export before parse", async () => {
+    const wasm = buildMockWasm((json) => JSON.parse(json) as HookEvent);
+    let seenEnv: Record<string, string> | null = null;
+    wasm.set_env = (ptr: number, len: number) => {
+      const bytes = new Uint8Array(wasm.memory.buffer, ptr, len);
+      seenEnv = JSON.parse(new TextDecoder().decode(bytes));
+    };
+    _setWasmInstance(wasm);
+    process.env.POLYHOOK_CALLER = "cursor";
+    try {
+      mockStdin(CLAUDE_CODE_PRE_TOOL_CALL);
+      await read();
+    } finally {
+      delete process.env.POLYHOOK_CALLER;
+    }
+
+    expect(seenEnv).not.toBeNull();
+    expect(seenEnv!.POLYHOOK_CALLER).toBe("cursor");
+  });
+});
+
 describe("read() — Cursor payloads", () => {
   afterEach(() => {
     _setWasmInstance(null);

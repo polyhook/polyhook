@@ -1,4 +1,4 @@
-use super::detect_caller;
+use super::{detect_caller, set_host_env};
 use crate::CallerKind;
 
 const AGENT_ENV_VARS: &[&str] = &[
@@ -227,5 +227,27 @@ fn hermes_session_start_heuristic() {
     });
     with_clean_env(|| {
         assert_eq!(detect_caller(&val), CallerKind::Hermes);
+    });
+}
+
+#[test]
+fn host_env_polyhook_caller_overrides_json_heuristics() {
+    let val = serde_json::json!({"tool_name": "Bash", "tool_input": {}});
+    with_clean_env(|| {
+        set_host_env([("POLYHOOK_CALLER".to_owned(), "cursor".to_owned())].into());
+        assert_eq!(detect_caller(&val), CallerKind::Cursor);
+        set_host_env(Default::default());
+        assert_eq!(detect_caller(&val), CallerKind::ClaudeCode);
+    });
+}
+
+#[test]
+fn host_env_agent_var_detected_without_process_env() {
+    let val = serde_json::json!({});
+    with_clean_env(|| {
+        set_host_env([("GEMINI_PROJECT_DIR".to_owned(), "/p".to_owned())].into());
+        assert_eq!(detect_caller(&val), CallerKind::GeminiCli);
+        set_host_env(Default::default());
+        assert_eq!(detect_caller(&val), CallerKind::Unknown);
     });
 }
