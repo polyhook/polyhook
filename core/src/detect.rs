@@ -24,7 +24,10 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
     }
 
     // 2. Agent-specific env vars
-    if std::env::var("CLAUDE_CODE_VERSION").is_ok() {
+    // CLAUDE_PROJECT_DIR is set by Claude Code for every hook command
+    // (https://code.claude.com/docs/en/hooks) and disambiguates the
+    // SessionStart/SessionEnd names it shares with Gemini CLI.
+    if std::env::var("CLAUDE_CODE_VERSION").is_ok() || std::env::var("CLAUDE_PROJECT_DIR").is_ok() {
         return CallerKind::ClaudeCode;
     }
     if std::env::var("CURSOR_SESSION_ID").is_ok() {
@@ -71,6 +74,12 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             | "subagent_stop" => {
                 return CallerKind::Hermes;
             }
+            // Claude Code-only names. Lifecycle events (Stop, SubagentStop, …)
+            // carry no tool_name/tool_input, so without this arm they would
+            // fall through to Unknown. SessionStart/SessionEnd/Notification are
+            // shared with Gemini CLI and stay ambiguous here (see env vars).
+            "PreToolUse" | "PostToolUse" | "Stop" | "SubagentStop" | "UserPromptSubmit"
+            | "PreCompact" | "PermissionRequest" => return CallerKind::ClaudeCode,
             _ => {}
         }
 

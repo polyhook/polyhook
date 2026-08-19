@@ -25,8 +25,8 @@ fn normalize_claude_code_event(vendor: &str) -> Option<&'static str> {
     match vendor {
         "PreToolUse" => Some("tool:before"),
         "PostToolUse" => Some("tool:after"),
-        "Startup" => Some("session:start"),
-        "Stop" => Some("session:stop"),
+        "Startup" | "SessionStart" => Some("session:start"),
+        "SessionEnd" | "Stop" => Some("session:stop"),
         "SubagentStop" => Some("agent:stop"),
         "Notification" => Some("notification"),
         _ => None,

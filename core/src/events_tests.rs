@@ -27,6 +27,20 @@ fn pi_startup() {
     assert_eq!(normalize_event("Startup", &CallerKind::Pi), "session:start");
 }
 #[test]
+fn cc_session_start() {
+    assert_eq!(
+        normalize_event("SessionStart", &CallerKind::ClaudeCode),
+        "session:start"
+    );
+}
+#[test]
+fn cc_session_end() {
+    assert_eq!(
+        normalize_event("SessionEnd", &CallerKind::ClaudeCode),
+        "session:stop"
+    );
+}
+#[test]
 fn cc_stop() {
     assert_eq!(
         normalize_event("Stop", &CallerKind::ClaudeCode),

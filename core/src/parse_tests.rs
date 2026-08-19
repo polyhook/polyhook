@@ -358,3 +358,40 @@ fn infers_tool_before_for_unrecognized_event_name_with_tool() {
     assert_eq!(evt.event.to_string(), "tool:before");
     assert_eq!(evt.tool.as_deref(), Some("bash"));
 }
+
+#[test]
+fn claude_code_stop_hook_without_tool_fields() {
+    let evt = parse_value(json!({
+        "session_id": "sess_cc_123",
+        "transcript_path": "/tmp/t.jsonl",
+        "cwd": "/tmp",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "session:stop");
+    assert!(evt.tool.is_none());
+    assert_eq!(evt.session_id, "sess_cc_123");
+}
+
+#[test]
+fn claude_code_subagent_stop_hook_without_tool_fields() {
+    let evt = parse_value(json!({
+        "session_id": "sess_cc_123",
+        "hook_event_name": "SubagentStop",
+        "stop_hook_active": false
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "agent:stop");
+}
+
+#[test]
+fn claude_code_user_prompt_submit_is_claude_code_notification() {
+    let evt = parse_value(json!({
+        "session_id": "sess_cc_123",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "hi"
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "notification");
+}
