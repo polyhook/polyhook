@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Claude Code lifecycle hooks (`Stop`, `SubagentStop`, `UserPromptSubmit`,
   `PreCompact`, `PermissionRequest`) are now detected as `claude-code`
   instead of `unknown`, and `SessionStart`/`SessionEnd` normalize to
-  `session:start`/`session:stop`. `CLAUDE_PROJECT_DIR` is recognised as a
+  `session:start`/`session:stop`. `CLAUDE_PROJECT_DIR` is recognized as a
   Claude Code env marker ([#63]).
 
 ### Changed
