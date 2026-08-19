@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Claude Code lifecycle hooks (`Stop`, `SubagentStop`, `UserPromptSubmit`,
+  `PreCompact`, `PermissionRequest`) are now detected as `claude-code`
+  instead of `unknown`, and `SessionStart`/`SessionEnd` normalize to
+  `session:start`/`session:stop`. `CLAUDE_PROJECT_DIR` is recognized as a
+  Claude Code env marker ([#63]).
+
 ### Changed
 
 - Refreshed the embedded `polyhook.wasm` artifact bundled with the Go SDK.
@@ -134,3 +142,4 @@ v0.1.2.
 [#36]: https://github.com/polyhook/polyhook/pull/36
 [#37]: https://github.com/polyhook/polyhook/pull/37
 [#38]: https://github.com/polyhook/polyhook/pull/38
+[#63]: https://github.com/polyhook/polyhook/issues/63
