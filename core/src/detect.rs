@@ -1,4 +1,31 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
+
 use crate::types::CallerKind;
+
+// Environment supplied by a host that cannot expose a real process env to us
+// (the WASM ABI: `wasm32-unknown-unknown` has no `std::env`). Consulted before
+// `std::env::var` so the same detection logic serves native and WASM callers.
+thread_local! {
+    static HOST_ENV: RefCell<HashMap<String, String>> = RefCell::new(HashMap::new());
+}
+
+/// Replace the host-supplied environment used by [`detect_caller`].
+///
+/// SDK shims running the WASM build call this (via the `set_env` export) with
+/// the host process environment before `parse`, because `std::env::var` is
+/// always empty inside `wasm32-unknown-unknown`.
+pub fn set_host_env(env: HashMap<String, String>) {
+    HOST_ENV.with(|e| *e.borrow_mut() = env);
+}
+
+/// Look up an environment variable: host-supplied env first, then the real
+/// process environment.
+fn env_var(name: &str) -> Option<String> {
+    HOST_ENV
+        .with(|e| e.borrow().get(name).cloned())
+        .or_else(|| std::env::var(name).ok())
+}
 
 /// Detect which agent is calling the hook.
 ///
@@ -9,7 +36,7 @@ use crate::types::CallerKind;
 /// 4. `Unknown`
 pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
     // 1. Explicit override via env var
-    if let Ok(val) = std::env::var("POLYHOOK_CALLER") {
+    if let Some(val) = env_var("POLYHOOK_CALLER") {
         match val.to_lowercase().as_str() {
             "claude-code" | "claudecode" => return CallerKind::ClaudeCode,
             "cursor" => return CallerKind::Cursor,
@@ -24,22 +51,22 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
     }
 
     // 2. Agent-specific env vars
-    if std::env::var("CLAUDE_CODE_VERSION").is_ok() {
+    if env_var("CLAUDE_CODE_VERSION").is_some() {
         return CallerKind::ClaudeCode;
     }
-    if std::env::var("CURSOR_SESSION_ID").is_ok() {
+    if env_var("CURSOR_SESSION_ID").is_some() {
         return CallerKind::Cursor;
     }
-    if std::env::var("WINDSURF_SESSION_ID").is_ok() {
+    if env_var("WINDSURF_SESSION_ID").is_some() {
         return CallerKind::Windsurf;
     }
-    if std::env::var("CLINE_SESSION_ID").is_ok() {
+    if env_var("CLINE_SESSION_ID").is_some() {
         return CallerKind::Cline;
     }
-    if std::env::var("AMP_SESSION_ID").is_ok() {
+    if env_var("AMP_SESSION_ID").is_some() {
         return CallerKind::Amp;
     }
-    if std::env::var("GEMINI_PROJECT_DIR").is_ok() {
+    if env_var("GEMINI_PROJECT_DIR").is_some() {
         return CallerKind::GeminiCli;
     }
 

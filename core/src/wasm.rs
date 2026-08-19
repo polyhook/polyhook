@@ -13,6 +13,7 @@
 ///   5. Call `dealloc` on both the input buffer and the output buffer.
 use std::cell::RefCell;
 
+use crate::detect::set_host_env;
 use crate::parse::parse_event;
 use crate::response::serialize_response_with_event;
 use crate::types::{CallerKind, HookEventEvent};
@@ -71,6 +72,26 @@ pub unsafe extern "C" fn dealloc(ptr: *mut u8, len: usize) {
 // ---------------------------------------------------------------------------
 // Core exports
 // ---------------------------------------------------------------------------
+
+/// Supply the host process environment as a JSON `{name: value}` object.
+///
+/// `wasm32-unknown-unknown` has no `std::env`, so without this call the
+/// `POLYHOOK_CALLER` override and agent env-var heuristics in `detect.rs` can
+/// never fire. SDK shims call this before `parse`. Malformed input clears any
+/// previously supplied environment.
+///
+/// # Safety
+///
+/// `ptr` must point to `len` consecutive readable bytes valid for the
+/// duration of this call. Ownership is not transferred; the caller still
+/// frees the buffer with `dealloc(ptr, len)`.
+#[no_mangle]
+pub unsafe extern "C" fn set_env(ptr: *const u8, len: usize) {
+    let input = std::slice::from_raw_parts(ptr, len);
+    let env: std::collections::HashMap<String, String> =
+        serde_json::from_slice(input).unwrap_or_default();
+    set_host_env(env);
+}
 
 /// Parse raw JSON bytes into a normalised `HookEvent` and return it as
 /// length-prefixed JSON.
@@ -262,6 +283,49 @@ mod tests {
 
             dealloc(input_ptr, json.len());
             dealloc(out_ptr, total);
+        }
+    }
+
+    #[test]
+    fn set_env_polyhook_caller_is_honoured_by_parse() {
+        let env = br#"{"POLYHOOK_CALLER":"claude-code"}"#;
+        let json = br#"{"session_id":"s","hook_event_name":"Stop"}"#;
+        unsafe {
+            let env_ptr = alloc(env.len());
+            std::ptr::copy_nonoverlapping(env.as_ptr(), env_ptr, env.len());
+            set_env(env_ptr as *const u8, env.len());
+            dealloc(env_ptr, env.len());
+
+            let input_ptr = alloc(json.len());
+            std::ptr::copy_nonoverlapping(json.as_ptr(), input_ptr, json.len());
+            let out_ptr = parse(input_ptr as *const u8, json.len());
+            let (payload, total) = read_length_prefixed(out_ptr);
+            let s = String::from_utf8(payload).expect("valid utf8");
+            dealloc(input_ptr, json.len());
+            dealloc(out_ptr, total);
+
+            // Reset so other tests are not affected.
+            set_env(b"{}".as_ptr(), 2);
+
+            assert!(s.contains("\"caller\":\"claude-code\""), "in: {s}");
+            assert!(s.contains("session:stop"), "in: {s}");
+        }
+    }
+
+    #[test]
+    fn set_env_malformed_input_clears_env() {
+        let bad = b"nope";
+        let json = br#"{"session_id":"s","hook_event_name":"Stop"}"#;
+        unsafe {
+            set_env(bad.as_ptr(), bad.len());
+            let input_ptr = alloc(json.len());
+            std::ptr::copy_nonoverlapping(json.as_ptr(), input_ptr, json.len());
+            let out_ptr = parse(input_ptr as *const u8, json.len());
+            let (payload, total) = read_length_prefixed(out_ptr);
+            let s = String::from_utf8(payload).expect("valid utf8");
+            dealloc(input_ptr, json.len());
+            dealloc(out_ptr, total);
+            assert!(s.contains("\"caller\":\"unknown\""), "in: {s}");
         }
     }
 

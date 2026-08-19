@@ -48,6 +48,8 @@ export interface WasmExports {
   dealloc(ptr: number, len: number): void;
   parse(ptr: number, len: number): number;
   serialize(ptr: number, len: number): number;
+  /** Optional: absent in mocks / pre-`set_env` builds of polyhook.wasm. */
+  set_env?(ptr: number, len: number): void;
 }
 
 let _wasm: WasmExports | null = null;
@@ -131,6 +133,17 @@ async function readStdin(): Promise<Buffer> {
  */
 export async function read(): Promise<HookEvent> {
   const wasm = await getWasm();
+
+  // wasm32-unknown-unknown has no std::env, so hand the host environment to
+  // the core — otherwise POLYHOOK_CALLER and the agent env-var heuristics in
+  // detect.rs can never fire.
+  if (wasm.set_env) {
+    const envBytes = new TextEncoder().encode(JSON.stringify(process.env));
+    const envPtr = wasm.alloc(envBytes.length);
+    writeBytes(wasm, envPtr, envBytes);
+    wasm.set_env(envPtr, envBytes.length);
+    wasm.dealloc(envPtr, envBytes.length);
+  }
 
   const inputBuf = await readStdin();
   const inputBytes = new Uint8Array(

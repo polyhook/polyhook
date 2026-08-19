@@ -15,6 +15,7 @@ Typical usage::
 from __future__ import annotations
 
 import json
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -115,6 +116,20 @@ def _parse(ptr: int, n: int) -> int:
     return _instance.exports(_store)["parse"](_store, ptr, n)
 
 
+def _set_env() -> None:
+    """Hand the host environment to the WASM core.
+
+    ``wasm32-unknown-unknown`` has no ``std::env``; without this the
+    ``POLYHOOK_CALLER`` override and agent env-var heuristics never fire.
+    """
+    set_env = _instance.exports(_store).get("set_env")
+    if set_env is None:  # pre-`set_env` polyhook.wasm
+        return
+    ptr, n = _write_to_wasm(json.dumps(dict(os.environ)).encode())
+    set_env(_store, ptr, n)
+    _dealloc(ptr, n)
+
+
 def _serialize(ptr: int, n: int) -> int:
     return _instance.exports(_store)["serialize"](_store, ptr, n)
 
@@ -157,6 +172,7 @@ def read() -> HookEvent:
 
     _init_wasm()
 
+    _set_env()
     stdin_bytes: bytes = sys.stdin.buffer.read()
 
     # Write stdin into WASM memory, call parse, then free the input buffer.

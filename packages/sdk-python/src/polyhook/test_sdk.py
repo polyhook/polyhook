@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import builtins
 import io
+import os
 import json
 import struct
 import sys
@@ -285,6 +286,25 @@ class TestRead:
                 ValueError, match="polyhook.wasm parse error: unknown caller"
             ):
                 read()
+
+    def test_host_env_handed_to_wasm_set_env(self):
+        """read() forwards os.environ to the ``set_env`` export when present."""
+        from polyhook import read
+        import polyhook.sdk as sdk
+
+        _patch_wasm(self._event_dict())
+        seen: dict[str, Any] = {}
+        exports = sdk._instance.exports(sdk._store)
+
+        def fake_set_env(store, ptr, n):
+            seen["len"] = n
+
+        exports["set_env"] = fake_set_env
+        with patch.dict(os.environ, {"POLYHOOK_CALLER": "cursor"}):
+            with patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"{}"))):
+                read()
+        # The JSON env blob must at least hold the override we injected.
+        assert seen["len"] >= len(b'{"POLYHOOK_CALLER": "cursor"}')
 
     def test_caller_stored(self):
         from polyhook import read
