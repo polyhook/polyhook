@@ -358,3 +358,28 @@ fn infers_tool_before_for_unrecognized_event_name_with_tool() {
     assert_eq!(evt.event.to_string(), "tool:before");
     assert_eq!(evt.tool.as_deref(), Some("bash"));
 }
+
+#[test]
+fn bare_command_payload_is_tool_before_with_input_preserved() {
+    let evt = parse_value(json!({ "command": "git commit --no-verify -m x" }));
+    assert_eq!(evt.caller, CallerKind::Unknown);
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert!(evt.tool.is_none());
+    let input = evt.input.expect("input should be present");
+    assert_eq!(input["command"], json!("git commit --no-verify -m x"));
+    assert!(evt.output.is_none());
+}
+
+#[test]
+fn bare_non_string_command_stays_notification() {
+    let evt = parse_value(json!({ "command": 42 }));
+    assert_eq!(evt.event.to_string(), "notification");
+    assert!(evt.input.is_none());
+}
+
+#[test]
+fn unknown_caller_tool_input_without_tool_name_is_tool_before() {
+    let evt = parse_value(json!({ "tool_input": { "cmd": "ls" }, "session_id": "s1" }));
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert!(evt.tool.is_none());
+}
