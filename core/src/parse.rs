@@ -27,11 +27,11 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     // (`tool:after`); anything else stays a notification.
     let raw_event = extract_event_field(&val, caller);
     let event = if raw_event.is_empty() {
-        infer_event(&tool, &output)
+        infer_event(&tool, &input, &output)
     } else {
         normalize_event(&raw_event, &caller)
             .parse::<HookEventEvent>()
-            .unwrap_or_else(|_| infer_event(&tool, &output))
+            .unwrap_or_else(|_| infer_event(&tool, &input, &output))
     };
 
     // --- session / agent ids ---
@@ -50,17 +50,20 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
 }
 
 /// Infer the normalized event kind from the payload shape when no usable
-/// vendor event name is available. A recognized tool with no output is a
+/// vendor event name is available. A recognized tool (or a bare tool input,
+/// e.g. `{"command": "..."}` piped without any envelope) with no output is a
 /// pending tool call; with output it has already run; otherwise there is
 /// nothing actionable, so treat it as a notification.
 fn infer_event(
     tool: &Option<String>,
+    input: &Option<serde_json::Map<String, serde_json::Value>>,
     output: &Option<serde_json::Map<String, serde_json::Value>>,
 ) -> HookEventEvent {
-    match (tool, output) {
-        (Some(_), Some(_)) => HookEventEvent::ToolAfter,
-        (Some(_), None) => HookEventEvent::ToolBefore,
-        _ => HookEventEvent::Notification,
+    let has_call = tool.is_some() || input.is_some();
+    match (has_call, output) {
+        (true, Some(_)) => HookEventEvent::ToolAfter,
+        (true, None) => HookEventEvent::ToolBefore,
+        (false, _) => HookEventEvent::Notification,
     }
 }
 
@@ -152,6 +155,11 @@ fn extract_input(
                 if let Some(v) = val.get(key) {
                     return into_map(v.clone());
                 }
+            }
+            // A bare tool input piped without any envelope (e.g. Claude Code's
+            // Bash `{"command": "..."}`): the payload IS the input object.
+            if val.get("command").is_some_and(serde_json::Value::is_string) {
+                return into_map(val.clone());
             }
             None
         }
