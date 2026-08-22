@@ -714,8 +714,8 @@ func TestReadFrom_WithRealWASM(t *testing.T) {
 			wantEvent:  "tool:before",
 		},
 		{
-			name:       "cursor before-tool",
-			input:      `{"type":"BeforeToolCall","toolCall":{"name":"run_terminal_cmd","args":{"command":"pwd"}},"sessionId":"sess_2"}`,
+			name:       "cursor before-shell-execution",
+			input:      `{"hook_event_name":"beforeShellExecution","command":"pwd","cwd":"/repo","conversation_id":"sess_2"}`,
 			wantCaller: "cursor",
 			wantEvent:  "tool:before",
 		},

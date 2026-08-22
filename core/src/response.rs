@@ -84,14 +84,24 @@ fn serialize_claude_code(resp: &HookResponse, event: Option<HookEventEvent>) -> 
     }
 }
 
+/// Cursor's real hook response schema (https://cursor.com/docs/hooks) is
+/// `permission: "allow" | "deny" | "ask"` plus optional `user_message` /
+/// `agent_message`, shared by every hook type that reads a response
+/// (preToolUse, beforeShellExecution, beforeMCPExecution, beforeReadFile, ...).
+/// Hooks that don't support a response (afterFileEdit, sessionEnd, ...) simply
+/// ignore these fields, so one shape covers every event.
 fn serialize_cursor(resp: &HookResponse) -> Value {
     match resp {
-        HookResponse::ApproveResponse(_) => json!({ "action": "allow" }),
+        HookResponse::ApproveResponse(_) => json!({ "permission": "allow" }),
         HookResponse::BlockResponse(b) => {
-            json!({ "action": "deny", "message": b.message })
+            json!({
+                "permission": "deny",
+                "user_message": b.message,
+                "agent_message": b.message
+            })
         }
         HookResponse::ModifyResponse(m) => {
-            json!({ "action": "modify", "args": m.input })
+            json!({ "permission": "allow", "updated_input": m.input })
         }
     }
 }
