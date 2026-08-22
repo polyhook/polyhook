@@ -253,7 +253,7 @@ mod tests {
             let input_ptr = alloc(json.len());
             std::ptr::copy_nonoverlapping(json.as_ptr(), input_ptr, json.len());
 
-            let out_ptr = parse(input_ptr as *const u8, json.len());
+            let out_ptr = parse(input_ptr.cast_const(), json.len());
             assert!(!out_ptr.is_null());
 
             let (payload, total) = read_length_prefixed(out_ptr);
@@ -272,7 +272,7 @@ mod tests {
             let input_ptr = alloc(bad.len());
             std::ptr::copy_nonoverlapping(bad.as_ptr(), input_ptr, bad.len());
 
-            let out_ptr = parse(input_ptr as *const u8, bad.len());
+            let out_ptr = parse(input_ptr.cast_const(), bad.len());
             assert!(!out_ptr.is_null());
 
             let (payload, total) = read_length_prefixed(out_ptr);
@@ -295,7 +295,7 @@ mod tests {
             let input_ptr = alloc(json.len());
             std::ptr::copy_nonoverlapping(json.as_ptr(), input_ptr, json.len());
 
-            let out_ptr = serialize(input_ptr as *const u8, json.len());
+            let out_ptr = serialize(input_ptr.cast_const(), json.len());
             assert!(!out_ptr.is_null());
 
             let (payload, total) = read_length_prefixed(out_ptr);
@@ -320,7 +320,7 @@ mod tests {
         unsafe {
             let ep = alloc(event_json.len());
             std::ptr::copy_nonoverlapping(event_json.as_ptr(), ep, event_json.len());
-            let ep_out = parse(ep as *const u8, event_json.len());
+            let ep_out = parse(ep.cast_const(), event_json.len());
             let (_, ep_total) = read_length_prefixed(ep_out);
             dealloc(ep, event_json.len());
             dealloc(ep_out, ep_total);
@@ -331,7 +331,7 @@ mod tests {
             let input_ptr = alloc(json.len());
             std::ptr::copy_nonoverlapping(json.as_ptr(), input_ptr, json.len());
 
-            let out_ptr = serialize(input_ptr as *const u8, json.len());
+            let out_ptr = serialize(input_ptr.cast_const(), json.len());
             assert!(!out_ptr.is_null());
 
             let (payload, total) = read_length_prefixed(out_ptr);
@@ -369,7 +369,7 @@ mod tests {
         unsafe {
             let ep = alloc(event_json.len());
             std::ptr::copy_nonoverlapping(event_json.as_ptr(), ep, event_json.len());
-            let ep_out = parse(ep as *const u8, event_json.len());
+            let ep_out = parse(ep.cast_const(), event_json.len());
             let (_, ep_total) = read_length_prefixed(ep_out);
             dealloc(ep, event_json.len());
             dealloc(ep_out, ep_total);
@@ -380,7 +380,7 @@ mod tests {
             let input_ptr = alloc(json.len());
             std::ptr::copy_nonoverlapping(json.as_ptr(), input_ptr, json.len());
 
-            let out_ptr = serialize(input_ptr as *const u8, json.len());
+            let out_ptr = serialize(input_ptr.cast_const(), json.len());
             assert!(!out_ptr.is_null());
 
             let (payload, total) = read_length_prefixed(out_ptr);
@@ -403,7 +403,7 @@ mod tests {
         unsafe {
             let ep = alloc(event_json.len());
             std::ptr::copy_nonoverlapping(event_json.as_ptr(), ep, event_json.len());
-            let ep_out = parse(ep as *const u8, event_json.len());
+            let ep_out = parse(ep.cast_const(), event_json.len());
             let (_, ep_total) = read_length_prefixed(ep_out);
             dealloc(ep, event_json.len());
             dealloc(ep_out, ep_total);
@@ -414,7 +414,7 @@ mod tests {
             let input_ptr = alloc(json.len());
             std::ptr::copy_nonoverlapping(json.as_ptr(), input_ptr, json.len());
 
-            let out_ptr = serialize(input_ptr as *const u8, json.len());
+            let out_ptr = serialize(input_ptr.cast_const(), json.len());
             assert!(!out_ptr.is_null());
 
             let (payload, total) = read_length_prefixed(out_ptr);
@@ -435,7 +435,7 @@ mod tests {
             let input_ptr = alloc(bad.len());
             std::ptr::copy_nonoverlapping(bad.as_ptr(), input_ptr, bad.len());
 
-            let out_ptr = serialize(input_ptr as *const u8, bad.len());
+            let out_ptr = serialize(input_ptr.cast_const(), bad.len());
             assert!(!out_ptr.is_null());
 
             let (payload, total) = read_length_prefixed(out_ptr);
