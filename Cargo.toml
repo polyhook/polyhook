@@ -19,3 +19,7 @@ semicolon_if_nothing_returned = "deny"
 # Small `Copy` types (e.g. the 1-byte `CallerKind` enum) are cheaper and
 # clearer to pass by value than by reference. See PR enabling this lint.
 trivially_copy_pass_by_ref = "warn"
+# Use `pointer::cast_const` / `pointer::cast_mut` instead of an `as` cast when
+# the only change is the pointer's constness, so genuine type-changing casts in
+# the WASM FFI layer stand out from mere const/mut adjustments.
+ptr_cast_constness = "deny"
