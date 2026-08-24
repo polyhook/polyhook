@@ -208,14 +208,15 @@ fn unknown_modify() {
 #[test]
 fn cursor_approve() {
     let val = serialize_response(&HookResponse::approve(), &CallerKind::Cursor);
-    assert_eq!(val["action"], json!("allow"));
+    assert_eq!(val["permission"], json!("allow"));
 }
 
 #[test]
 fn cursor_block() {
     let val = serialize_response(&HookResponse::block("too risky"), &CallerKind::Cursor);
-    assert_eq!(val["action"], json!("deny"));
-    assert_eq!(val["message"], json!("too risky"));
+    assert_eq!(val["permission"], json!("deny"));
+    assert_eq!(val["user_message"], json!("too risky"));
+    assert_eq!(val["agent_message"], json!("too risky"));
 }
 
 #[test]
@@ -225,8 +226,8 @@ fn cursor_modify() {
         &HookResponse::modify(new_input.clone()),
         &CallerKind::Cursor,
     );
-    assert_eq!(val["action"], json!("modify"));
-    assert_eq!(val["args"], new_input);
+    assert_eq!(val["permission"], json!("allow"));
+    assert_eq!(val["updated_input"], new_input);
 }
 
 #[test]

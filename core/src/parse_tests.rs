@@ -79,10 +79,10 @@ fn cursor_after_tool() {
 fn cursor_session_start() {
     let raw = fixture("cursor-session-start.json");
     let evt = parse_event(&raw).expect("parse failed");
-    assert_eq!(evt.caller, CallerKind::Unknown);
+    assert_eq!(evt.caller, CallerKind::Cursor);
+    assert_eq!(evt.event.to_string(), "session:start");
     assert_eq!(evt.session_id, "sess_cur_456");
     assert!(evt.tool.is_none());
-    assert_eq!(evt.event.to_string(), "notification");
 }
 
 #[test]

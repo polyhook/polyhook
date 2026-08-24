@@ -81,7 +81,7 @@ fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
             "hook_event",
             "type",
         ],
-        CallerKind::Cursor => &["type", "event"],
+        CallerKind::Cursor => &["hook_event_name"],
         CallerKind::Windsurf => &["event", "type"],
         CallerKind::Cline => &["type", "event"],
         CallerKind::Amp => &["kind", "event", "type"],
@@ -101,11 +101,18 @@ fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
 fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
     match caller {
         CallerKind::ClaudeCode | CallerKind::Pi => str_field(val, "tool_name").map(str::to_owned),
-        CallerKind::Cursor => val
-            .get("toolCall")
-            .and_then(|tc| tc.get("name"))
-            .and_then(|n| n.as_str())
-            .map(str::to_owned),
+        // Most Cursor hooks (preToolUse, postToolUse, beforeMCPExecution, ...)
+        // send tool_name like Claude Code. beforeShellExecution /
+        // afterShellExecution have no tool_name at all (just a bare `command`
+        // field), so synthesize the name Cursor itself uses for its terminal
+        // tool, which `normalize_tool` already maps to the canonical "bash".
+        CallerKind::Cursor => str_field(val, "tool_name").map(str::to_owned).or_else(|| {
+            matches!(
+                str_field(val, "hook_event_name"),
+                Some("beforeShellExecution") | Some("afterShellExecution")
+            )
+            .then(|| "run_terminal_cmd".to_owned())
+        }),
         CallerKind::Windsurf => str_field(val, "tool").map(str::to_owned),
         CallerKind::Cline => str_field(val, "toolName").map(str::to_owned),
         CallerKind::Amp => str_field(val, "name").map(str::to_owned),
@@ -135,7 +142,10 @@ fn extract_input(
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
         CallerKind::ClaudeCode | CallerKind::Pi => val.get("tool_input").cloned(),
-        CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("args")).cloned(),
+        CallerKind::Cursor => val.get("tool_input").cloned().or_else(|| {
+            val.get("command")
+                .map(|c| serde_json::json!({ "command": c }))
+        }),
         CallerKind::Windsurf => val.get("parameters").cloned(),
         CallerKind::Cline => val
             .get("args")
@@ -165,7 +175,10 @@ fn extract_output(
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
         CallerKind::ClaudeCode | CallerKind::Pi => val.get("tool_output").cloned(),
-        CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("result")).cloned(),
+        // afterShellExecution's `output` is a plain string (raw command
+        // output), not a structured object, so it does not survive
+        // `into_map` below; only postToolUse's `tool_output` object does.
+        CallerKind::Cursor => val.get("tool_output").cloned(),
         CallerKind::Windsurf => val.get("result").cloned(),
         CallerKind::Cline => val
             .get("result")
@@ -193,7 +206,9 @@ fn extract_output(
 }
 
 fn extract_session_id(val: &serde_json::Value) -> String {
-    for key in &["session_id", "sessionId", "session"] {
+    // Cursor has no `session_id` field; every hook payload carries
+    // `conversation_id` instead (https://cursor.com/docs/hooks).
+    for key in &["session_id", "sessionId", "session", "conversation_id"] {
         if let Some(s) = str_field(val, key) {
             return s.to_owned();
         }
