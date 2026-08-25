@@ -335,10 +335,57 @@ fn infers_tool_after_when_event_missing_but_output_present() {
     let evt = parse_value(json!({
         "tool_name": "Read",
         "tool_input": { "file_path": "/tmp/foo.txt" },
-        "tool_output": { "content": "hi" },
+        "tool_response": { "content": "hi" },
     }));
     assert_eq!(evt.event.to_string(), "tool:after");
     assert!(evt.output.is_some());
+}
+
+#[test]
+fn claude_code_post_tool_output_read_from_tool_response() {
+    // Claude Code sends the tool result as `tool_response`, not `tool_output`.
+    // Shape taken from https://code.claude.com/docs/en/hooks#posttooluse-input.
+    let evt = parse_value(json!({
+        "session_id": "abc123",
+        "cwd": "/home/user",
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Write",
+        "tool_input": { "file_path": "/path/to/file.txt", "content": "file content" },
+        "tool_response": { "filePath": "/path/to/file.txt", "success": true },
+        "tool_use_id": "toolu_01ABC123",
+        "duration_ms": 12,
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "tool:after");
+    let output = evt.output.expect("output should be present");
+    assert_eq!(output["success"], json!(true));
+    assert_eq!(output["filePath"], json!("/path/to/file.txt"));
+}
+
+#[test]
+fn claude_code_post_tool_output_falls_back_to_tool_output() {
+    let evt = parse_value(json!({
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Read",
+        "tool_input": { "file_path": "/tmp/foo.txt" },
+        "tool_output": { "content": "hi" },
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    let output = evt.output.expect("output should be present");
+    assert_eq!(output["content"], json!("hi"));
+}
+
+#[test]
+fn claude_code_tool_response_wins_over_tool_output() {
+    let evt = parse_value(json!({
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Read",
+        "tool_input": { "file_path": "/tmp/foo.txt" },
+        "tool_response": { "content": "from tool_response" },
+        "tool_output": { "content": "from tool_output" },
+    }));
+    let output = evt.output.expect("output should be present");
+    assert_eq!(output["content"], json!("from tool_response"));
 }
 
 #[test]

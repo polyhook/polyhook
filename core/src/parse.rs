@@ -164,7 +164,12 @@ fn extract_output(
     caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi => val.get("tool_output").cloned(),
+        // Claude Code sends the tool result as `tool_response` on PostToolUse;
+        // `tool_output` is kept as a fallback for callers that spell it that way.
+        CallerKind::ClaudeCode | CallerKind::Pi => val
+            .get("tool_response")
+            .cloned()
+            .or_else(|| val.get("tool_output").cloned()),
         CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("result")).cloned(),
         CallerKind::Windsurf => val.get("result").cloned(),
         CallerKind::Cline => val

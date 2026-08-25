@@ -365,7 +365,7 @@ mod tests {
         // Parse a Claude Code PostToolUse event so LAST_CALLER/LAST_EVENT are set
         // to (ClaudeCode, ToolAfter) — this variant still uses the generic
         // `decision: "block"` format, which is correct outside PreToolUse.
-        let event_json = br#"{"type":"PostToolUse","tool_name":"Bash","tool_input":{"command":"ls"},"tool_output":{"content":"ok"},"session_id":"s2"}"#;
+        let event_json = br#"{"type":"PostToolUse","tool_name":"Bash","tool_input":{"command":"ls"},"tool_response":{"content":"ok"},"session_id":"s2"}"#;
         unsafe {
             let ep = alloc(event_json.len());
             std::ptr::copy_nonoverlapping(event_json.as_ptr(), ep, event_json.len());
