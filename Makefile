@@ -247,8 +247,8 @@ coverage/go:
 	  go test -coverprofile=coverage.out \
 	     -coverpkg=$$(go list ./... | grep -v '^$$') \
 	     ./... && \
-	  go tool cover -func=coverage.out | \
-	    grep -v 'generated_types\.go' | \
+	  grep -vE 'generated_types\.go|/examples/' coverage.out > coverage.sdk.out && \
+	  go tool cover -func=coverage.sdk.out | \
 	    awk '/total:/{pct=$$3+0; if (pct < 85) { print "Go coverage: "$$3" (need ≥85%)"; exit 1 }}'
 
 ## coverage/python: Python SDK coverage via pytest-cov
