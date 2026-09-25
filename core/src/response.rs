@@ -17,8 +17,13 @@ pub(crate) fn serialize_response_with_event(
     caller: CallerKind,
     event: Option<HookEventEvent>,
 ) -> Value {
+    if let HookResponse::ContextResponse(c) = resp {
+        if let Some(value) = serialize_context(&c.context, caller) {
+            return value;
+        }
+    }
     match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Unknown => {
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Unknown => {
             serialize_claude_code(resp, event)
         }
         CallerKind::Cursor => serialize_cursor(resp),
@@ -30,6 +35,31 @@ pub(crate) fn serialize_response_with_event(
     }
 }
 
+/// Context injection for a prompt:submit event, or `None` when the caller has
+/// no prompt hook that can add context (Cursor, Windsurf, Amp); those callers
+/// then fall through to their approve format.
+fn serialize_context(context: &str, caller: CallerKind) -> Option<Value> {
+    match caller {
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Unknown => {
+            Some(json!({
+                "hookSpecificOutput": {
+                    "hookEventName": "UserPromptSubmit",
+                    "additionalContext": context
+                }
+            }))
+        }
+        CallerKind::GeminiCli => Some(json!({
+            "hookSpecificOutput": {
+                "hookEventName": "BeforeAgent",
+                "additionalContext": context
+            }
+        })),
+        CallerKind::Hermes => Some(json!({ "context": context })),
+        CallerKind::Cline => Some(json!({ "cancel": false, "contextModification": context })),
+        CallerKind::Cursor | CallerKind::Windsurf | CallerKind::Amp => None,
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Per-caller serializers
 // ---------------------------------------------------------------------------
@@ -37,7 +67,7 @@ pub(crate) fn serialize_response_with_event(
 fn serialize_claude_code(resp: &HookResponse, event: Option<HookEventEvent>) -> Value {
     let is_pre_tool_use = matches!(event, Some(HookEventEvent::ToolBefore));
     match resp {
-        HookResponse::ApproveResponse(_) => {
+        HookResponse::ApproveResponse(_) | HookResponse::ContextResponse(_) => {
             if is_pre_tool_use {
                 // PreToolUse only reads hookSpecificOutput.permissionDecision; an empty
                 // `{}` is a passive no-op (falls through to the normal permission flow)
@@ -86,7 +116,9 @@ fn serialize_claude_code(resp: &HookResponse, event: Option<HookEventEvent>) -> 
 
 fn serialize_cursor(resp: &HookResponse) -> Value {
     match resp {
-        HookResponse::ApproveResponse(_) => json!({ "action": "allow" }),
+        HookResponse::ApproveResponse(_) | HookResponse::ContextResponse(_) => {
+            json!({ "action": "allow" })
+        }
         HookResponse::BlockResponse(b) => {
             json!({ "action": "deny", "message": b.message })
         }
@@ -98,7 +130,9 @@ fn serialize_cursor(resp: &HookResponse) -> Value {
 
 fn serialize_windsurf(resp: &HookResponse) -> Value {
     match resp {
-        HookResponse::ApproveResponse(_) => json!({ "allow": true }),
+        HookResponse::ApproveResponse(_) | HookResponse::ContextResponse(_) => {
+            json!({ "allow": true })
+        }
         HookResponse::BlockResponse(b) => {
             json!({ "allow": false, "reason": b.message })
         }
@@ -110,7 +144,9 @@ fn serialize_windsurf(resp: &HookResponse) -> Value {
 
 fn serialize_cline(resp: &HookResponse) -> Value {
     match resp {
-        HookResponse::ApproveResponse(_) => json!({ "approved": true }),
+        HookResponse::ApproveResponse(_) | HookResponse::ContextResponse(_) => {
+            json!({ "approved": true })
+        }
         HookResponse::BlockResponse(b) => {
             json!({ "approved": false, "reason": b.message })
         }
@@ -122,7 +158,9 @@ fn serialize_cline(resp: &HookResponse) -> Value {
 
 fn serialize_amp(resp: &HookResponse) -> Value {
     match resp {
-        HookResponse::ApproveResponse(_) => json!({ "result": "allow" }),
+        HookResponse::ApproveResponse(_) | HookResponse::ContextResponse(_) => {
+            json!({ "result": "allow" })
+        }
         HookResponse::BlockResponse(b) => {
             json!({ "result": "deny", "reason": b.message })
         }
@@ -134,7 +172,9 @@ fn serialize_amp(resp: &HookResponse) -> Value {
 
 fn serialize_gemini_cli(resp: &HookResponse) -> Value {
     match resp {
-        HookResponse::ApproveResponse(_) => json!({ "decision": "allow" }),
+        HookResponse::ApproveResponse(_) | HookResponse::ContextResponse(_) => {
+            json!({ "decision": "allow" })
+        }
         HookResponse::BlockResponse(b) => {
             json!({ "decision": "deny", "reason": b.message })
         }
@@ -146,7 +186,7 @@ fn serialize_gemini_cli(resp: &HookResponse) -> Value {
 
 fn serialize_hermes(resp: &HookResponse) -> Value {
     match resp {
-        HookResponse::ApproveResponse(_) => json!({}),
+        HookResponse::ApproveResponse(_) | HookResponse::ContextResponse(_) => json!({}),
         HookResponse::BlockResponse(b) => {
             json!({ "action": "block", "message": b.message })
         }

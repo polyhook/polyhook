@@ -19,6 +19,7 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             "gemini-cli" | "geminicli" => return CallerKind::GeminiCli,
             "hermes" | "hermes-agent" | "hermesagent" => return CallerKind::Hermes,
             "pi" => return CallerKind::Pi,
+            "codex" => return CallerKind::Codex,
             _ => {}
         }
     }
@@ -72,6 +73,23 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
                 return CallerKind::Hermes;
             }
             _ => {}
+        }
+
+        // Cline's file hooks name the event in `hookName` and tag every
+        // payload with `clineVersion`.
+        if has("hookName") && has("clineVersion") {
+            return CallerKind::Cline;
+        }
+
+        // Codex speaks Claude Code's hook format but adds a per-turn
+        // `turn_id` to every payload, which Claude Code never sends.
+        if has("hook_event_name") && has("turn_id") {
+            return CallerKind::Codex;
+        }
+
+        // Claude Code prompt events carry the prompt, not tool fields.
+        if str_val("hook_event_name") == "UserPromptSubmit" {
+            return CallerKind::ClaudeCode;
         }
 
         if has("tool_name") && has("tool_input") {

@@ -358,3 +358,91 @@ fn infers_tool_before_for_unrecognized_event_name_with_tool() {
     assert_eq!(evt.event.to_string(), "tool:before");
     assert_eq!(evt.tool.as_deref(), Some("bash"));
 }
+
+// ---------------------------------------------------------------------------
+// prompt:submit — one payload per caller that has a prompt hook
+// ---------------------------------------------------------------------------
+
+fn parse_prompt(payload: serde_json::Value) -> crate::HookEvent {
+    let vars: Vec<(&str, Option<&str>)> = [
+        "POLYHOOK_CALLER",
+        "CLAUDE_CODE_VERSION",
+        "CURSOR_SESSION_ID",
+        "WINDSURF_SESSION_ID",
+        "CLINE_SESSION_ID",
+        "AMP_SESSION_ID",
+        "GEMINI_PROJECT_DIR",
+    ]
+    .iter()
+    .map(|k| (*k, None))
+    .collect();
+    temp_env::with_vars(vars, || {
+        parse_event(payload.to_string().as_bytes()).expect("parse failed")
+    })
+}
+
+#[test]
+fn claude_code_user_prompt_submit() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "UserPromptSubmit", "prompt": "fix the bug",
+        "session_id": "s1", "cwd": "/w", "transcript_path": "/t"
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn codex_user_prompt_submit() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "UserPromptSubmit", "prompt": "fix the bug", "session_id": "s1",
+        "turn_id": "t1", "model": "gpt-5", "cwd": "/w", "permission_mode": "default"
+    }));
+    assert_eq!(evt.caller, CallerKind::Codex);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn gemini_cli_before_agent() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "BeforeAgent", "prompt": "fix the bug", "session_id": "s1",
+        "cwd": "/w", "timestamp": "2026-01-01T00:00:00Z"
+    }));
+    assert_eq!(evt.caller, CallerKind::GeminiCli);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn hermes_pre_llm_call() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "pre_llm_call", "tool_name": null, "tool_input": null,
+        "session_id": "s1", "cwd": "/w",
+        "extra": {"user_message": "fix the bug", "is_first_turn": true}
+    }));
+    assert_eq!(evt.caller, CallerKind::Hermes);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn cline_user_prompt_submit() {
+    let evt = parse_prompt(json!({
+        "clineVersion": "3.40.0", "hookName": "UserPromptSubmit", "taskId": "task1",
+        "workspaceRoots": ["/w"], "userPromptSubmit": {"prompt": "fix the bug", "attachments": []}
+    }));
+    assert_eq!(evt.caller, CallerKind::Cline);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn prompt_is_none_for_tool_events() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "PreToolUse", "tool_name": "Bash",
+        "tool_input": {"command": "ls"}, "prompt": "stray", "session_id": "s1"
+    }));
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert!(evt.prompt.is_none());
+}

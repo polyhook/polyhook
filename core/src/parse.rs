@@ -34,6 +34,12 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
             .unwrap_or_else(|_| infer_event(&tool, &output))
     };
 
+    let prompt = if event == HookEventEvent::PromptSubmit {
+        extract_prompt(&val, caller)
+    } else {
+        None
+    };
+
     // --- session / agent ids ---
     let session_id = extract_session_id(&val);
     let agent_id = extract_agent_id(&val);
@@ -46,6 +52,7 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
         session_id,
         agent_id,
         caller,
+        prompt,
     })
 }
 
@@ -74,7 +81,7 @@ fn str_field<'a>(val: &'a serde_json::Value, key: &str) -> Option<&'a str> {
 
 fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
     let candidates: &[&str] = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi => &[
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex => &[
             "hook_event_name",
             "event",
             "hookEvent",
@@ -83,7 +90,7 @@ fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
         ],
         CallerKind::Cursor => &["type", "event"],
         CallerKind::Windsurf => &["event", "type"],
-        CallerKind::Cline => &["type", "event"],
+        CallerKind::Cline => &["hookName", "type", "event"],
         CallerKind::Amp => &["kind", "event", "type"],
         CallerKind::GeminiCli => &["hook_event_name"],
         CallerKind::Hermes => &["hook_event_name"],
@@ -100,7 +107,9 @@ fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
 
 fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
     match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi => str_field(val, "tool_name").map(str::to_owned),
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex => {
+            str_field(val, "tool_name").map(str::to_owned)
+        }
         CallerKind::Cursor => val
             .get("toolCall")
             .and_then(|tc| tc.get("name"))
@@ -134,7 +143,9 @@ fn extract_input(
     caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi => val.get("tool_input").cloned(),
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex => {
+            val.get("tool_input").cloned()
+        }
         CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("args")).cloned(),
         CallerKind::Windsurf => val.get("parameters").cloned(),
         CallerKind::Cline => val
@@ -164,7 +175,9 @@ fn extract_output(
     caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi => val.get("tool_output").cloned(),
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex => {
+            val.get("tool_output").cloned()
+        }
         CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("result")).cloned(),
         CallerKind::Windsurf => val.get("result").cloned(),
         CallerKind::Cline => val
@@ -199,6 +212,18 @@ fn extract_session_id(val: &serde_json::Value) -> String {
         }
     }
     String::new()
+}
+
+fn extract_prompt(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
+    let prompt = match caller {
+        CallerKind::Hermes => val
+            .get("extra")
+            .and_then(|e| e.get("user_message"))
+            .or_else(|| val.get("user_message")),
+        CallerKind::Cline => val.get("userPromptSubmit").and_then(|p| p.get("prompt")),
+        _ => val.get("prompt"),
+    };
+    prompt.and_then(|p| p.as_str()).map(str::to_owned)
 }
 
 fn extract_agent_id(val: &serde_json::Value) -> Option<String> {

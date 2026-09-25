@@ -16,6 +16,7 @@
         "gemini-cli",
         "hermes",
         "pi",
+        "codex",
         "unknown"
       ]
     },
@@ -27,7 +28,7 @@
       "additionalProperties": false,
       "properties": {
         "event": {
-          "description": "Normalized event kind. One of: 'tool:before' (about to run a tool), 'tool:after' (tool finished), 'session:start' (new agent session opened), 'session:stop' (agent session closed), 'agent:stop' (sub-agent returned), 'notification' (informational message, no response required).",
+          "description": "Normalized event kind. One of: 'tool:before' (about to run a tool), 'tool:after' (tool finished), 'session:start' (new agent session opened), 'session:stop' (agent session closed), 'agent:stop' (sub-agent returned), 'prompt:submit' (user prompt about to reach the model), 'notification' (informational message, no response required).",
           "type": "string",
           "enum": [
             "tool:before",
@@ -35,8 +36,13 @@
             "session:start",
             "session:stop",
             "agent:stop",
+            "prompt:submit",
             "notification"
           ]
+        },
+        "prompt": {
+          "description": "The user's prompt text. Present for prompt:submit events; null for all other event kinds.",
+          "type": ["string", "null"]
         },
         "tool": {
           "description": "Normalized tool name (e.g. 'bash', 'write_file', 'read_file'). Present for tool:before and tool:after events; null for all other event kinds.",
@@ -92,8 +98,29 @@
         },
         {
           "$ref": "#/definitions/ModifyResponse"
+        },
+        {
+          "$ref": "#/definitions/ContextResponse"
         }
       ]
+    },
+    "ContextResponse": {
+      "title": "ContextResponse",
+      "description": "Instructs the AI tool to add the given text to the model's context for this turn. Meaningful for prompt:submit events; callers that cannot inject context (Cursor, Windsurf, Amp) treat it as approve.",
+      "type": "object",
+      "required": ["action", "context"],
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "description": "Discriminator field identifying this as a context response.",
+          "type": "string",
+          "const": "context"
+        },
+        "context": {
+          "description": "Text to add to the model's context.",
+          "type": "string"
+        }
+      }
     },
     "ApproveResponse": {
       "title": "ApproveResponse",

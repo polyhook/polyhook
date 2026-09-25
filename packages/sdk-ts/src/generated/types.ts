@@ -12,19 +12,38 @@
  * via the `definition` "CallerKind".
  */
 export type CallerKind =
-  "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "unknown";
+  | "claude-code"
+  | "cursor"
+  | "windsurf"
+  | "cline"
+  | "amp"
+  | "gemini-cli"
+  | "hermes"
+  | "pi"
+  | "codex"
+  | "unknown";
 /**
  * The AI coding tool that invoked this hook binary, detected from environment variables and stdin format. Defaults to 'unknown' when detection fails.
  */
 export type CallerKind =
-  "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "unknown";
+  | "claude-code"
+  | "cursor"
+  | "windsurf"
+  | "cline"
+  | "amp"
+  | "gemini-cli"
+  | "hermes"
+  | "pi"
+  | "codex"
+  | "unknown";
 /**
  * The response a hook handler returns to polyhook.wasm, which translates it into the format expected by the detected caller. Discriminated on the 'action' field.
  *
  * This interface was referenced by `PolyhookSchema`'s JSON-Schema
  * via the `definition` "HookResponse".
  */
-export type HookResponse = ApproveResponse | BlockResponse | ModifyResponse;
+export type HookResponse =
+  ApproveResponse | BlockResponse | ModifyResponse | ContextResponse;
 
 /**
  * Source-of-truth type definitions for the polyhook SDK. All language-specific types (Rust, TypeScript, Go, Python, .NET) are generated from this file.
@@ -40,9 +59,20 @@ export interface PolyhookSchema {
  */
 export interface HookEvent {
   /**
-   * Normalized event kind. One of: 'tool:before' (about to run a tool), 'tool:after' (tool finished), 'session:start' (new agent session opened), 'session:stop' (agent session closed), 'agent:stop' (sub-agent returned), 'notification' (informational message, no response required).
+   * Normalized event kind. One of: 'tool:before' (about to run a tool), 'tool:after' (tool finished), 'session:start' (new agent session opened), 'session:stop' (agent session closed), 'agent:stop' (sub-agent returned), 'prompt:submit' (user prompt about to reach the model), 'notification' (informational message, no response required).
    */
-  event: "tool:before" | "tool:after" | "session:start" | "session:stop" | "agent:stop" | "notification";
+  event:
+    | "tool:before"
+    | "tool:after"
+    | "session:start"
+    | "session:stop"
+    | "agent:stop"
+    | "prompt:submit"
+    | "notification";
+  /**
+   * The user's prompt text. Present for prompt:submit events; null for all other event kinds.
+   */
+  prompt?: string | null;
   /**
    * Normalized tool name (e.g. 'bash', 'write_file', 'read_file'). Present for tool:before and tool:after events; null for all other event kinds.
    */
@@ -114,4 +144,20 @@ export interface ModifyResponse {
   input: {
     [k: string]: unknown;
   };
+}
+/**
+ * Instructs the AI tool to add the given text to the model's context for this turn. Meaningful for prompt:submit events; callers that cannot inject context (Cursor, Windsurf, Amp) treat it as approve.
+ *
+ * This interface was referenced by `PolyhookSchema`'s JSON-Schema
+ * via the `definition` "ContextResponse".
+ */
+export interface ContextResponse {
+  /**
+   * Discriminator field identifying this as a context response.
+   */
+  action: "context";
+  /**
+   * Text to add to the model's context.
+   */
+  context: string;
 }

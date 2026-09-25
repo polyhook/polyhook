@@ -145,6 +145,10 @@ pub unsafe extern "C" fn serialize(ptr: *const u8, len: usize) -> *mut u8 {
                         .unwrap_or(serde_json::Value::Object(Default::default()));
                     crate::types::HookResponse::modify(input)
                 }
+                Some("context") => {
+                    let context = val.get("context").and_then(|c| c.as_str()).unwrap_or("");
+                    crate::types::HookResponse::context(context)
+                }
                 _ => crate::types::HookResponse::approve(),
             };
             let caller = LAST_CALLER.with(|c| *c.borrow());
@@ -390,6 +394,36 @@ mod tests {
             assert_eq!(parsed["reason"], serde_json::json!("dangerous command"));
             assert!(parsed.get("hookSpecificOutput").is_none());
 
+            dealloc(input_ptr, json.len());
+            dealloc(out_ptr, total);
+        }
+    }
+
+    #[test]
+    fn serialize_context_injects_for_prompt_submit() {
+        let event_json =
+            br#"{"hook_event_name":"UserPromptSubmit","prompt":"hi","session_id":"s4"}"#;
+        unsafe {
+            let ep = alloc(event_json.len());
+            std::ptr::copy_nonoverlapping(event_json.as_ptr(), ep, event_json.len());
+            let ep_out = parse(ep as *const u8, event_json.len());
+            let (_, ep_total) = read_length_prefixed(ep_out);
+            dealloc(ep, event_json.len());
+            dealloc(ep_out, ep_total);
+        }
+
+        let json = br#"{"action":"context","context":"use skill X"}"#;
+        unsafe {
+            let input_ptr = alloc(json.len());
+            std::ptr::copy_nonoverlapping(json.as_ptr(), input_ptr, json.len());
+            let out_ptr = serialize(input_ptr as *const u8, json.len());
+            let (payload, total) = read_length_prefixed(out_ptr);
+            let parsed: serde_json::Value =
+                serde_json::from_slice(&payload).expect("should be valid JSON");
+            assert_eq!(
+                parsed["hookSpecificOutput"]["additionalContext"],
+                serde_json::json!("use skill X")
+            );
             dealloc(input_ptr, json.len());
             dealloc(out_ptr, total);
         }
