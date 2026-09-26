@@ -74,6 +74,17 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             _ => {}
         }
 
+        // Cline's file hooks name the event in `hookName` and tag every
+        // payload with `clineVersion`.
+        if has("hookName") && has("clineVersion") {
+            return CallerKind::Cline;
+        }
+
+        // Claude Code prompt events carry the prompt, not tool fields.
+        if str_val("hook_event_name") == "UserPromptSubmit" {
+            return CallerKind::ClaudeCode;
+        }
+
         if has("tool_name") && has("tool_input") {
             return CallerKind::ClaudeCode;
         }

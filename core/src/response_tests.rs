@@ -351,3 +351,51 @@ fn hermes_modify() {
     assert_eq!(val["action"], json!("modify"));
     assert_eq!(val["tool_input"], new_input);
 }
+
+// ---------------------------------------------------------------------------
+// ContextResponse
+// ---------------------------------------------------------------------------
+
+#[test]
+fn context_claude_code_family() {
+    for caller in [CallerKind::ClaudeCode, CallerKind::Pi] {
+        assert_eq!(
+            serialize_response(&HookResponse::context("ctx"), &caller),
+            json!({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": "ctx"}})
+        );
+    }
+}
+
+#[test]
+fn context_gemini_cli() {
+    assert_eq!(
+        serialize_response(&HookResponse::context("ctx"), &CallerKind::GeminiCli),
+        json!({"hookSpecificOutput": {"hookEventName": "BeforeAgent", "additionalContext": "ctx"}})
+    );
+}
+
+#[test]
+fn context_hermes() {
+    assert_eq!(
+        serialize_response(&HookResponse::context("ctx"), &CallerKind::Hermes),
+        json!({"context": "ctx"})
+    );
+}
+
+#[test]
+fn context_cline() {
+    assert_eq!(
+        serialize_response(&HookResponse::context("ctx"), &CallerKind::Cline),
+        json!({"cancel": false, "contextModification": "ctx"})
+    );
+}
+
+#[test]
+fn context_falls_back_to_approve_without_prompt_injection() {
+    for caller in [CallerKind::Cursor, CallerKind::Windsurf, CallerKind::Amp] {
+        assert_eq!(
+            serialize_response(&HookResponse::context("ctx"), &caller),
+            serialize_response(&HookResponse::approve(), &caller)
+        );
+    }
+}

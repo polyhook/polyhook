@@ -34,6 +34,12 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
             .unwrap_or_else(|_| infer_event(&tool, &output))
     };
 
+    let prompt = if event == HookEventEvent::PromptSubmit {
+        extract_prompt(&val, caller)
+    } else {
+        None
+    };
+
     // --- session / agent ids ---
     let session_id = extract_session_id(&val);
     let agent_id = extract_agent_id(&val);
@@ -46,6 +52,7 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
         session_id,
         agent_id,
         caller,
+        prompt,
     })
 }
 
@@ -83,7 +90,7 @@ fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
         ],
         CallerKind::Cursor => &["type", "event"],
         CallerKind::Windsurf => &["event", "type"],
-        CallerKind::Cline => &["type", "event"],
+        CallerKind::Cline => &["hookName", "type", "event"],
         CallerKind::Amp => &["kind", "event", "type"],
         CallerKind::GeminiCli => &["hook_event_name"],
         CallerKind::Hermes => &["hook_event_name"],
@@ -199,6 +206,15 @@ fn extract_session_id(val: &serde_json::Value) -> String {
         }
     }
     String::new()
+}
+
+fn extract_prompt(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
+    let prompt = match caller {
+        CallerKind::Hermes => val.get("extra").and_then(|e| e.get("user_message")),
+        CallerKind::Cline => val.get("userPromptSubmit").and_then(|p| p.get("prompt")),
+        _ => val.get("prompt"),
+    };
+    prompt.and_then(|p| p.as_str()).map(str::to_owned)
 }
 
 fn extract_agent_id(val: &serde_json::Value) -> Option<String> {

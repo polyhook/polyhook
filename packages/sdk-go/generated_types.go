@@ -36,6 +36,17 @@ const CallerKindPi CallerKind = "pi"
 const CallerKindUnknown CallerKind = "unknown"
 const CallerKindWindsurf CallerKind = "windsurf"
 
+// Instructs the AI tool to add the given text to the model's context for this
+// turn. Meaningful for prompt:submit events; callers that cannot inject context
+// (Cursor, Windsurf, Amp) treat it as approve.
+type ContextResponse struct {
+	// Discriminator field identifying this as a context response.
+	Action string `json:"action" yaml:"action" mapstructure:"action"`
+
+	// Text to add to the model's context.
+	Context string `json:"context" yaml:"context" mapstructure:"context"`
+}
+
 // The normalized event payload delivered to every hook handler after polyhook.wasm
 // has parsed and translated the caller-specific stdin format.
 type HookEvent struct {
@@ -51,7 +62,8 @@ type HookEvent struct {
 	// Normalized event kind. One of: 'tool:before' (about to run a tool),
 	// 'tool:after' (tool finished), 'session:start' (new agent session opened),
 	// 'session:stop' (agent session closed), 'agent:stop' (sub-agent returned),
-	// 'notification' (informational message, no response required).
+	// 'prompt:submit' (user prompt about to reach the model), 'notification'
+	// (informational message, no response required).
 	Event HookEventEvent `json:"event" yaml:"event" mapstructure:"event"`
 
 	// Tool input arguments as a free-form object. Present for tool:before events;
@@ -61,6 +73,10 @@ type HookEvent struct {
 	// Tool output as a free-form object. Present for tool:after events; null
 	// otherwise. The shape depends on the specific tool that produced the output.
 	Output interface{} `json:"output,omitempty" yaml:"output,omitempty" mapstructure:"output,omitempty"`
+
+	// The user's prompt text. Present for prompt:submit events; null for all other
+	// event kinds.
+	Prompt *string `json:"prompt,omitempty" yaml:"prompt,omitempty" mapstructure:"prompt,omitempty"`
 
 	// Opaque session identifier provided by the calling AI tool. Used to correlate
 	// events that belong to the same agent session.
@@ -72,10 +88,6 @@ type HookEvent struct {
 }
 
 type HookEventEvent string
-
-const HookEventEventAgentStop HookEventEvent = "agent:stop"
-const HookEventEventNotification HookEventEvent = "notification"
-const HookEventEventSessionStart HookEventEvent = "session:start"
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *BlockResponse) UnmarshalJSON(b []byte) error {
@@ -99,29 +111,6 @@ func (j *BlockResponse) UnmarshalJSON(b []byte) error {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (j *HookEventEvent) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_HookEventEvent {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_HookEventEvent, v)
-	}
-	*j = HookEventEvent(v)
-	return nil
-}
-
-const HookEventEventToolBefore HookEventEvent = "tool:before"
-const HookEventEventToolAfter HookEventEvent = "tool:after"
-
-// UnmarshalJSON implements json.Unmarshaler.
 func (j *ApproveResponse) UnmarshalJSON(b []byte) error {
 	var raw map[string]interface{}
 	if err := json.Unmarshal(b, &raw); err != nil {
@@ -139,26 +128,25 @@ func (j *ApproveResponse) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-const HookEventEventSessionStop HookEventEvent = "session:stop"
-
-var enumValues_HookEventEvent = []interface{}{
-	"tool:before",
-	"tool:after",
-	"session:start",
-	"session:stop",
-	"agent:stop",
-	"notification",
-}
-var enumValues_CallerKind = []interface{}{
-	"claude-code",
-	"cursor",
-	"windsurf",
-	"cline",
-	"amp",
-	"gemini-cli",
-	"hermes",
-	"pi",
-	"unknown",
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *ContextResponse) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["action"]; !ok || v == nil {
+		return fmt.Errorf("field action in ContextResponse: required")
+	}
+	if v, ok := raw["context"]; !ok || v == nil {
+		return fmt.Errorf("field context in ContextResponse: required")
+	}
+	type Plain ContextResponse
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = ContextResponse(plain)
+	return nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
@@ -179,6 +167,56 @@ func (j *CallerKind) UnmarshalJSON(b []byte) error {
 	}
 	*j = CallerKind(v)
 	return nil
+}
+
+var enumValues_HookEventEvent = []interface{}{
+	"tool:before",
+	"tool:after",
+	"session:start",
+	"session:stop",
+	"agent:stop",
+	"prompt:submit",
+	"notification",
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *HookEventEvent) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_HookEventEvent {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_HookEventEvent, v)
+	}
+	*j = HookEventEvent(v)
+	return nil
+}
+
+const HookEventEventToolBefore HookEventEvent = "tool:before"
+const HookEventEventSessionStart HookEventEvent = "session:start"
+const HookEventEventToolAfter HookEventEvent = "tool:after"
+const HookEventEventPromptSubmit HookEventEvent = "prompt:submit"
+const HookEventEventAgentStop HookEventEvent = "agent:stop"
+const HookEventEventSessionStop HookEventEvent = "session:stop"
+const HookEventEventNotification HookEventEvent = "notification"
+
+var enumValues_CallerKind = []interface{}{
+	"claude-code",
+	"cursor",
+	"windsurf",
+	"cline",
+	"amp",
+	"gemini-cli",
+	"hermes",
+	"pi",
+	"unknown",
 }
 
 // UnmarshalJSON implements json.Unmarshaler.

@@ -204,10 +204,10 @@ fn gc_notification() {
     );
 }
 #[test]
-fn gc_before_agent_falls_through() {
+fn gc_before_agent() {
     assert_eq!(
         normalize_event("BeforeAgent", &CallerKind::GeminiCli),
-        "BeforeAgent"
+        "prompt:submit"
     );
 }
 #[test]
@@ -262,7 +262,7 @@ fn hermes_after_tool() {
 fn hermes_pre_llm_call() {
     assert_eq!(
         normalize_event("pre_llm_call", &CallerKind::Hermes),
-        "notification"
+        "prompt:submit"
     );
 }
 #[test]
@@ -296,4 +296,18 @@ fn hermes_subagent_stop() {
 #[test]
 fn hermes_unknown_falls_through() {
     assert_eq!(normalize_event("bogus", &CallerKind::Hermes), "bogus");
+}
+#[test]
+fn cc_user_prompt_submit() {
+    assert_eq!(
+        normalize_event("UserPromptSubmit", &CallerKind::ClaudeCode),
+        "prompt:submit"
+    );
+}
+#[test]
+fn cline_user_prompt_submit() {
+    assert_eq!(
+        normalize_event("UserPromptSubmit", &CallerKind::Cline),
+        "prompt:submit"
+    );
 }

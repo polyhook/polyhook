@@ -61,9 +61,10 @@ Types are auto-generated in every SDK from `core/schema.json` — not hand-writt
 
 ```typescript
 interface HookEvent {
-  event:     "tool:before" | "tool:after" | "session:start" | "session:stop" | "agent:stop" | "notification";
+  event:     "tool:before" | "tool:after" | "session:start" | "session:stop" | "agent:stop" | "prompt:submit" | "notification";
   tool?:     string;                        // normalized tool name, e.g. "bash", "write_file"
   input?:    Record<string, unknown>;       // tool input arguments
+  prompt?:   string;                        // user prompt (prompt:submit only)
   output?:   Record<string, unknown>;       // tool output (tool:after only)
   sessionId: string;
   agentId?:  string;
@@ -80,6 +81,7 @@ type HookResponse =
   | { action: "approve" }
   | { action: "block";  message: string }
   | { action: "modify"; input: Record<string, unknown> }
+  | { action: "context"; context: string }   // prompt:submit: add text to the model's context
 ```
 
 ---
@@ -150,6 +152,8 @@ Examples: [packages/sdk-python/examples/](packages/sdk-python/examples/)
 | [Continue](https://continue.dev) | 🚧 In progress |
 | [Aider](https://aider.chat) | 🚧 In progress |
 | [Copilot](https://github.com/features/copilot) | 📋 Planned |
+
+`prompt:submit` context injection (`{ action: "context" }`) works on Claude Code, Gemini CLI (`BeforeAgent`), Hermes (`pre_llm_call`) and Cline (`UserPromptSubmit`). Cursor, Windsurf and Amp have no prompt hook that can add context, so there a context response is sent as approve.
 
 Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
 
