@@ -358,7 +358,7 @@ fn hermes_modify() {
 
 #[test]
 fn context_claude_code_family() {
-    for caller in [CallerKind::ClaudeCode, CallerKind::Codex, CallerKind::Pi] {
+    for caller in [CallerKind::ClaudeCode, CallerKind::Pi] {
         assert_eq!(
             serialize_response(&HookResponse::context("ctx"), &caller),
             json!({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": "ctx"}})

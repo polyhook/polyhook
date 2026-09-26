@@ -393,17 +393,6 @@ fn claude_code_user_prompt_submit() {
 }
 
 #[test]
-fn codex_user_prompt_submit() {
-    let evt = parse_prompt(json!({
-        "hook_event_name": "UserPromptSubmit", "prompt": "fix the bug", "session_id": "s1",
-        "turn_id": "t1", "model": "gpt-5", "cwd": "/w", "permission_mode": "default"
-    }));
-    assert_eq!(evt.caller, CallerKind::Codex);
-    assert_eq!(evt.event.to_string(), "prompt:submit");
-    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
-}
-
-#[test]
 fn gemini_cli_before_agent() {
     let evt = parse_prompt(json!({
         "hook_event_name": "BeforeAgent", "prompt": "fix the bug", "session_id": "s1",

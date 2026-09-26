@@ -61,14 +61,6 @@ hooks_docs  = "https://github.com/eleqtrizit/pi-autohooks"
 hooks_notes = "Claude Code-compatible hook payloads via Pi hook packages"
 
 [[tool]]
-id          = "codex"
-name        = "Codex"
-status      = "supported"
-homepage    = "https://developers.openai.com/codex"
-hooks_docs  = "https://developers.openai.com/codex/hooks"
-hooks_notes = "Claude Code-compatible hook payloads plus a per-turn turn_id"
-
-[[tool]]
 id          = "continue"
 name        = "Continue"
 status      = "in-progress"

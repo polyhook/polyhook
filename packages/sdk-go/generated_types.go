@@ -29,7 +29,6 @@ type CallerKind string
 const CallerKindAmp CallerKind = "amp"
 const CallerKindClaudeCode CallerKind = "claude-code"
 const CallerKindCline CallerKind = "cline"
-const CallerKindCodex CallerKind = "codex"
 const CallerKindCursor CallerKind = "cursor"
 const CallerKindGeminiCli CallerKind = "gemini-cli"
 const CallerKindHermes CallerKind = "hermes"
@@ -90,10 +89,6 @@ type HookEvent struct {
 
 type HookEventEvent string
 
-const HookEventEventAgentStop HookEventEvent = "agent:stop"
-const HookEventEventNotification HookEventEvent = "notification"
-const HookEventEventPromptSubmit HookEventEvent = "prompt:submit"
-
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *BlockResponse) UnmarshalJSON(b []byte) error {
 	var raw map[string]interface{}
@@ -114,41 +109,6 @@ func (j *BlockResponse) UnmarshalJSON(b []byte) error {
 	*j = BlockResponse(plain)
 	return nil
 }
-
-var enumValues_HookEventEvent = []interface{}{
-	"tool:before",
-	"tool:after",
-	"session:start",
-	"session:stop",
-	"agent:stop",
-	"prompt:submit",
-	"notification",
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *HookEventEvent) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_HookEventEvent {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_HookEventEvent, v)
-	}
-	*j = HookEventEvent(v)
-	return nil
-}
-
-const HookEventEventToolBefore HookEventEvent = "tool:before"
-const HookEventEventToolAfter HookEventEvent = "tool:after"
-const HookEventEventSessionStart HookEventEvent = "session:start"
-const HookEventEventSessionStop HookEventEvent = "session:stop"
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *ApproveResponse) UnmarshalJSON(b []byte) error {
@@ -189,19 +149,6 @@ func (j *ContextResponse) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-var enumValues_CallerKind = []interface{}{
-	"claude-code",
-	"cursor",
-	"windsurf",
-	"cline",
-	"amp",
-	"gemini-cli",
-	"hermes",
-	"pi",
-	"codex",
-	"unknown",
-}
-
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *CallerKind) UnmarshalJSON(b []byte) error {
 	var v string
@@ -220,6 +167,56 @@ func (j *CallerKind) UnmarshalJSON(b []byte) error {
 	}
 	*j = CallerKind(v)
 	return nil
+}
+
+var enumValues_HookEventEvent = []interface{}{
+	"tool:before",
+	"tool:after",
+	"session:start",
+	"session:stop",
+	"agent:stop",
+	"prompt:submit",
+	"notification",
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *HookEventEvent) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_HookEventEvent {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_HookEventEvent, v)
+	}
+	*j = HookEventEvent(v)
+	return nil
+}
+
+const HookEventEventToolBefore HookEventEvent = "tool:before"
+const HookEventEventSessionStart HookEventEvent = "session:start"
+const HookEventEventToolAfter HookEventEvent = "tool:after"
+const HookEventEventPromptSubmit HookEventEvent = "prompt:submit"
+const HookEventEventAgentStop HookEventEvent = "agent:stop"
+const HookEventEventSessionStop HookEventEvent = "session:stop"
+const HookEventEventNotification HookEventEvent = "notification"
+
+var enumValues_CallerKind = []interface{}{
+	"claude-code",
+	"cursor",
+	"windsurf",
+	"cline",
+	"amp",
+	"gemini-cli",
+	"hermes",
+	"pi",
+	"unknown",
 }
 
 // UnmarshalJSON implements json.Unmarshaler.

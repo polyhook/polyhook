@@ -305,13 +305,6 @@ fn cc_user_prompt_submit() {
     );
 }
 #[test]
-fn codex_user_prompt_submit() {
-    assert_eq!(
-        normalize_event("UserPromptSubmit", &CallerKind::Codex),
-        "prompt:submit"
-    );
-}
-#[test]
 fn cline_user_prompt_submit() {
     assert_eq!(
         normalize_event("UserPromptSubmit", &CallerKind::Cline),
