@@ -1,6 +1,6 @@
 //! Vendor tool name lookup.
 
-use super::field::str_field;
+use super::json_string_field::str_field;
 use crate::types::CallerKind;
 
 pub(super) fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) -> Option<String> {

@@ -1,6 +1,6 @@
 //! Session and agent identifiers.
 
-use super::field::str_field;
+use super::json_string_field::str_field;
 
 pub(super) fn extract_session_id(val: &serde_json::Value) -> String {
     for key in &["session_id", "sessionId", "session"] {

@@ -1,19 +1,21 @@
-mod event;
-mod field;
-mod ids;
-mod payload;
-mod prompt;
-mod tool;
+mod event_kind_inference;
+mod json_string_field;
+mod session_and_agent_ids;
+mod tool_input_and_output;
+mod user_prompt;
+mod vendor_event_name;
+mod vendor_tool_name;
 
 use crate::detect::detect_caller;
 use crate::events::normalize_event;
 use crate::tools::normalize_tool;
 use crate::types::{HookEvent, HookEventEvent};
-use event::{extract_event_field, infer_event};
-use ids::{extract_agent_id, extract_session_id};
-use payload::{extract_input, extract_output};
-use prompt::extract_prompt;
-use tool::extract_tool_field;
+use event_kind_inference::infer_event;
+use session_and_agent_ids::{extract_agent_id, extract_session_id};
+use tool_input_and_output::{extract_input, extract_output};
+use user_prompt::extract_prompt;
+use vendor_event_name::extract_event_field;
+use vendor_tool_name::extract_tool_field;
 
 /// Parse raw stdin bytes into a normalized [`HookEvent`].
 pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
