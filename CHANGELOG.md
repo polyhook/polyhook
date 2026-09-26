@@ -7,8 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-26
+
+### Added
+
+- `prompt:submit` event with a `prompt` field, and a `ContextResponse`
+  (`{ action: "context", context }`) that adds text to the model's context
+  for the turn. Supported on Claude Code, Pi, Gemini CLI (`BeforeAgent`),
+  Hermes (`pre_llm_call`) and Cline (`UserPromptSubmit`); Cursor, Windsurf and
+  Amp receive it as approve ([#73]).
+- Codex caller, detected by its per-turn `turn_id` or `POLYHOOK_CALLER=codex`,
+  using Claude Code-compatible payloads and responses ([#74]).
+
 ### Changed
 
+- **Breaking:** Hermes `pre_llm_call` now normalizes to `prompt:submit`
+  instead of `notification` ([#73]).
+- **Breaking (Rust):** `CallerKind`, `HookEventEvent` and `HookResponse` gained
+  variants, so exhaustive `match`es need new arms ([#73], [#74]).
+- Split `core/src/parse.rs` helpers into `core/src/parse/` submodules; no
+  behavior change ([#75]).
 - Refreshed the embedded `polyhook.wasm` artifact bundled with the Go SDK.
 
 ## [0.1.11] - 2026-06-19
@@ -134,3 +152,6 @@ v0.1.2.
 [#36]: https://github.com/polyhook/polyhook/pull/36
 [#37]: https://github.com/polyhook/polyhook/pull/37
 [#38]: https://github.com/polyhook/polyhook/pull/38
+[#73]: https://github.com/polyhook/polyhook/pull/73
+[#74]: https://github.com/polyhook/polyhook/pull/74
+[#75]: https://github.com/polyhook/polyhook/pull/75
