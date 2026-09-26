@@ -23,7 +23,7 @@ pub(crate) fn serialize_response_with_event(
         }
     }
     match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Unknown => {
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Unknown => {
             serialize_claude_code(resp, event)
         }
         CallerKind::Cursor => serialize_cursor(resp),
@@ -40,12 +40,14 @@ pub(crate) fn serialize_response_with_event(
 /// then fall through to their approve format.
 fn serialize_context(context: &str, caller: CallerKind) -> Option<Value> {
     match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Unknown => Some(json!({
-            "hookSpecificOutput": {
-                "hookEventName": "UserPromptSubmit",
-                "additionalContext": context
-            }
-        })),
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Unknown => {
+            Some(json!({
+                "hookSpecificOutput": {
+                    "hookEventName": "UserPromptSubmit",
+                    "additionalContext": context
+                }
+            }))
+        }
         CallerKind::GeminiCli => Some(json!({
             "hookSpecificOutput": {
                 "hookEventName": "BeforeAgent",
