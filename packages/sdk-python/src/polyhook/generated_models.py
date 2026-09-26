@@ -18,6 +18,7 @@ class CallerKind(Enum):
     gemini_cli = "gemini-cli"
     hermes = "hermes"
     pi = "pi"
+    codex = "codex"
     unknown = "unknown"
 
 

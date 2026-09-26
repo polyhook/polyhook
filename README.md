@@ -68,7 +68,7 @@ interface HookEvent {
   output?:   Record<string, unknown>;       // tool output (tool:after only)
   sessionId: string;
   agentId?:  string;
-  caller:    "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "unknown";
+  caller:    "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "codex" | "unknown";
 }
 ```
 
@@ -149,11 +149,12 @@ Examples: [packages/sdk-python/examples/](packages/sdk-python/examples/)
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | ✅ Supported |
 | [Hermes Agent](https://github.com/NousResearch/hermes-agent) | ✅ Supported |
 | [Pi](https://pi.dev) | ✅ Supported |
+| [Codex](https://developers.openai.com/codex) | ✅ Supported |
 | [Continue](https://continue.dev) | 🚧 In progress |
 | [Aider](https://aider.chat) | 🚧 In progress |
 | [Copilot](https://github.com/features/copilot) | 📋 Planned |
 
-`prompt:submit` context injection (`{ action: "context" }`) works on Claude Code, Gemini CLI (`BeforeAgent`), Hermes (`pre_llm_call`) and Cline (`UserPromptSubmit`). Cursor, Windsurf and Amp have no prompt hook that can add context, so there a context response is sent as approve.
+`prompt:submit` context injection (`{ action: "context" }`) works on Claude Code, Codex, Gemini CLI (`BeforeAgent`), Hermes (`pre_llm_call`) and Cline (`UserPromptSubmit`). Cursor, Windsurf and Amp have no prompt hook that can add context, so there a context response is sent as approve.
 
 Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
 

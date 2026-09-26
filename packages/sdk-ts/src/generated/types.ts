@@ -20,6 +20,7 @@ export type CallerKind =
   | "gemini-cli"
   | "hermes"
   | "pi"
+  | "codex"
   | "unknown";
 /**
  * The AI coding tool that invoked this hook binary, detected from environment variables and stdin format. Defaults to 'unknown' when detection fails.
@@ -33,6 +34,7 @@ export type CallerKind =
   | "gemini-cli"
   | "hermes"
   | "pi"
+  | "codex"
   | "unknown";
 /**
  * The response a hook handler returns to polyhook.wasm, which translates it into the format expected by the detected caller. Discriminated on the 'action' field.
