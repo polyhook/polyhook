@@ -3,63 +3,15 @@ name: Release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v0.1.[0-9]+'
 
 permissions:
-  contents: write   # create GitHub Release + push Go submodule tag
+  contents: read
 
+# release/0.1.x maintenance branch: crates.io only. npm, PyPI, the Go SDK wasm
+# commit to main and the GitHub "Latest" release belong to the current line on
+# main; publishing a 0.1.x patch there would overwrite or outrank it.
 jobs:
-  # ── Build WASM ──────────────────────────────────────────────────────────────
-  build-wasm:
-    name: Build WASM
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
-      - run: make wasm
-      - uses: actions/upload-artifact@v4
-        with:
-          name: polyhook-wasm
-          path: polyhook.wasm
-          retention-days: 1
-
-  # ── npm (@polyhook/sdk → npmjs.com) ─────────────────────────────────────────
-  # Uses OIDC trusted publishing — no NPM_TOKEN needed.
-  publish-npm:
-    name: Publish npm
-    runs-on: ubuntu-latest
-    needs: build-wasm
-    permissions:
-      contents: read
-      id-token: write   # OIDC trusted publishing
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
-          cache: pnpm
-          cache-dependency-path: packages/sdk-ts/pnpm-lock.yaml
-      - uses: actions/download-artifact@v4
-        with:
-          name: polyhook-wasm
-          path: packages/sdk-ts
-      - run: pnpm install
-        working-directory: packages/sdk-ts
-      - name: Set version
-        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
-        working-directory: packages/sdk-ts
-      - run: pnpm build
-        working-directory: packages/sdk-ts
-      - run: pnpm publish --no-git-checks --access public --provenance
-        working-directory: packages/sdk-ts
-
   # ── crates.io (polyhook-core + polyhook) ────────────────────────────────────
   # Required secret: CRATES_IO_TOKEN
   # Note: sdk-rust uses a path dep on polyhook-core; we publish core first,
@@ -67,7 +19,6 @@ jobs:
   publish-crates:
     name: Publish crates.io
     runs-on: ubuntu-latest
-    needs: build-wasm
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -90,64 +41,3 @@ jobs:
           done
           exit 1
 
-  # ── PyPI (polyhook) ──────────────────────────────────────────────────────────
-  # Required secret: PYPI_TOKEN
-  publish-pypi:
-    name: Publish PyPI
-    runs-on: ubuntu-latest
-    needs: build-wasm
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - uses: actions/download-artifact@v4
-        with:
-          name: polyhook-wasm
-          path: packages/sdk-python/src/polyhook
-      - name: Set version
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION\"/" pyproject.toml
-        working-directory: packages/sdk-python
-      - run: uv build
-        working-directory: packages/sdk-python
-      - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: packages/sdk-python/dist
-          password: ${{ secrets.PYPI_TOKEN }}
-
-  # ── GitHub Release + Go submodule tag ───────────────────────────────────────
-  # Creates the release and attaches polyhook.wasm as a binary asset.
-  # Also pushes packages/sdk-go/<tag> required by the Go module proxy for
-  # github.com/tupe12334/polyhook/packages/sdk-go (subdirectory module).
-  # Runs even if individual publish jobs fail — as long as wasm built.
-  github-release:
-    name: GitHub Release
-    runs-on: ubuntu-latest
-    needs: [build-wasm, publish-npm, publish-crates, publish-pypi]
-    if: always() && needs.build-wasm.result == 'success'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/download-artifact@v4
-        with:
-          name: polyhook-wasm
-      - name: Update Go SDK WASM and tag submodule
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
-          cp polyhook.wasm packages/sdk-go/polyhook.wasm
-          git add packages/sdk-go/polyhook.wasm
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: update Go SDK polyhook.wasm for ${GITHUB_REF_NAME}"
-            git push origin main
-          fi
-          git tag -f "packages/sdk-go/${GITHUB_REF_NAME}"
-          git push origin -f "packages/sdk-go/${GITHUB_REF_NAME}"
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: polyhook.wasm
-          generate_release_notes: true

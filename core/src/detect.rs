@@ -58,9 +58,17 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             | "BeforeModel"
             | "AfterModel"
             | "BeforeToolSelection"
-            | "PreCompress"
-            | "SessionStart"
-            | "SessionEnd" => return CallerKind::GeminiCli,
+            | "PreCompress" => return CallerKind::GeminiCli,
+            // Shared with Claude Code. Claude Code sets CLAUDE_PROJECT_DIR for
+            // every hook (https://code.claude.com/docs/en/hooks); Gemini CLI
+            // sets it too, as an alias, but also sets GEMINI_PROJECT_DIR,
+            // which step 2 already matched.
+            "SessionStart" | "SessionEnd" => {
+                if std::env::var("CLAUDE_PROJECT_DIR").is_ok() {
+                    return CallerKind::ClaudeCode;
+                }
+                return CallerKind::GeminiCli;
+            }
             "pre_tool_call"
             | "post_tool_call"
             | "pre_llm_call"
