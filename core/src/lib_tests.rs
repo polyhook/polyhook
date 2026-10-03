@@ -120,6 +120,9 @@ fn respond_delegates_to_stdout() {
 #[cfg(unix)]
 #[test]
 fn read_delegates_to_stdin() {
+    // Newer rustc flags redeclaring libc symbols that std also uses; the
+    // signatures match libc, so the declaration is sound.
+    #[allow(unknown_lints, suspicious_runtime_symbol_definitions)]
     extern "C" {
         fn pipe(fds: *mut i32) -> i32;
         fn dup(fd: i32) -> i32;

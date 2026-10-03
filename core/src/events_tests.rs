@@ -289,3 +289,15 @@ fn hermes_subagent_stop() {
 fn hermes_unknown_falls_through() {
     assert_eq!(normalize_event("bogus", &CallerKind::Hermes), "bogus");
 }
+
+#[test]
+fn cc_session_start_and_end() {
+    assert_eq!(
+        normalize_event("SessionStart", &CallerKind::ClaudeCode),
+        "session:start"
+    );
+    assert_eq!(
+        normalize_event("SessionEnd", &CallerKind::ClaudeCode),
+        "session:stop"
+    );
+}
