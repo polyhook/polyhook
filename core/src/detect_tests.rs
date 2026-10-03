@@ -232,11 +232,54 @@ fn hermes_session_start_heuristic() {
 }
 
 #[test]
-fn claude_project_dir_env_var_detected() {
-    let val = serde_json::json!({});
+fn claude_code_session_end_with_project_dir_env_detected() {
+    let val = serde_json::json!({
+        "hook_event_name": "SessionEnd",
+        "session_id": "s1",
+        "reason": "other"
+    });
     with_clean_env(|| {
         temp_env::with_var("CLAUDE_PROJECT_DIR", Some("/proj"), || {
             assert_eq!(detect_caller(&val), CallerKind::ClaudeCode);
+        });
+    });
+}
+
+#[test]
+fn gemini_cli_claude_project_dir_alias_stays_gemini() {
+    // Gemini CLI sets CLAUDE_PROJECT_DIR as an alias alongside GEMINI_PROJECT_DIR.
+    let val = serde_json::json!({"hook_event_name": "SessionEnd", "session_id": "s1"});
+    with_clean_env(|| {
+        temp_env::with_vars(
+            [
+                ("GEMINI_PROJECT_DIR", Some("/proj")),
+                ("CLAUDE_PROJECT_DIR", Some("/proj")),
+            ],
+            || assert_eq!(detect_caller(&val), CallerKind::GeminiCli),
+        );
+    });
+}
+
+#[test]
+fn claude_project_dir_alone_does_not_claim_non_shared_payloads() {
+    let val = serde_json::json!({});
+    with_clean_env(|| {
+        temp_env::with_var("CLAUDE_PROJECT_DIR", Some("/proj"), || {
+            assert_eq!(detect_caller(&val), CallerKind::Unknown);
+        });
+    });
+}
+
+#[test]
+fn codex_turn_id_beats_claude_code_event_names() {
+    with_clean_env(|| {
+        temp_env::with_var("CLAUDE_PROJECT_DIR", Some("/proj"), || {
+            for name in ["PreToolUse", "Stop", "UserPromptSubmit", "SessionStart"] {
+                let val = serde_json::json!({
+                    "hook_event_name": name, "session_id": "s1", "turn_id": "t1"
+                });
+                assert_eq!(detect_caller(&val), CallerKind::Codex, "{name}");
+            }
         });
     });
 }

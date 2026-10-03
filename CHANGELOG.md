@@ -12,8 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Claude Code lifecycle hooks (`Stop`, `SubagentStop`, `UserPromptSubmit`,
   `PreCompact`, `PermissionRequest`) are now detected as `claude-code`
   instead of `unknown`, and `SessionStart`/`SessionEnd` normalize to
-  `session:start`/`session:stop`. `CLAUDE_PROJECT_DIR` is recognized as a
-  Claude Code env marker ([#63]).
+  `session:start`/`session:stop`. Claude Code `SessionStart`/`SessionEnd`
+  hooks are told apart from Gemini CLI by `CLAUDE_PROJECT_DIR` (Gemini CLI
+  sets it too, but also sets `GEMINI_PROJECT_DIR`), so approving them no
+  longer emits Gemini's `{"decision":"allow"}`, which Claude Code rejects.
+  Codex payloads (`turn_id`) still win over the shared event names ([#63]).
 
 ## [0.2.0] - 2026-09-26
 
