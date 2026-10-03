@@ -446,3 +446,40 @@ fn prompt_is_none_for_tool_events() {
     assert_eq!(evt.event.to_string(), "tool:before");
     assert!(evt.prompt.is_none());
 }
+
+#[test]
+fn claude_code_stop_hook_without_tool_fields() {
+    let evt = parse_value(json!({
+        "session_id": "sess_cc_123",
+        "transcript_path": "/tmp/t.jsonl",
+        "cwd": "/tmp",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "session:stop");
+    assert!(evt.tool.is_none());
+    assert_eq!(evt.session_id, "sess_cc_123");
+}
+
+#[test]
+fn claude_code_subagent_stop_hook_without_tool_fields() {
+    let evt = parse_value(json!({
+        "session_id": "sess_cc_123",
+        "hook_event_name": "SubagentStop",
+        "stop_hook_active": false
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "agent:stop");
+}
+
+#[test]
+fn claude_code_user_prompt_submit_without_tool_fields() {
+    let evt = parse_value(json!({
+        "session_id": "sess_cc_123",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "hi"
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+}

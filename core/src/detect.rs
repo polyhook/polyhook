@@ -60,9 +60,19 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             | "BeforeModel"
             | "AfterModel"
             | "BeforeToolSelection"
-            | "PreCompress"
-            | "SessionStart"
-            | "SessionEnd" => return CallerKind::GeminiCli,
+            | "PreCompress" => return CallerKind::GeminiCli,
+            // Shared with Claude Code. Claude Code sets CLAUDE_PROJECT_DIR for
+            // every hook (https://code.claude.com/docs/en/hooks); Gemini CLI
+            // sets it too, as an alias, but also sets GEMINI_PROJECT_DIR,
+            // which step 2 already matched. Codex payloads carry `turn_id`.
+            "SessionStart" | "SessionEnd" => {
+                if std::env::var("CLAUDE_PROJECT_DIR").is_err() {
+                    return CallerKind::GeminiCli;
+                }
+                if !has("turn_id") {
+                    return CallerKind::ClaudeCode;
+                }
+            }
             "pre_tool_call"
             | "post_tool_call"
             | "pre_llm_call"
@@ -87,8 +97,19 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             return CallerKind::Codex;
         }
 
-        // Claude Code prompt events carry the prompt, not tool fields.
-        if str_val("hook_event_name") == "UserPromptSubmit" {
+        // Claude Code-only names, checked after Codex (which reuses them).
+        // Lifecycle events (Stop, SubagentStop, …) carry no tool_name/tool_input,
+        // and prompt events carry the prompt, so the shape check below misses them.
+        if matches!(
+            str_val("hook_event_name"),
+            "PreToolUse"
+                | "PostToolUse"
+                | "Stop"
+                | "SubagentStop"
+                | "UserPromptSubmit"
+                | "PreCompact"
+                | "PermissionRequest"
+        ) {
             return CallerKind::ClaudeCode;
         }
 
