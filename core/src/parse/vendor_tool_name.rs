@@ -1,6 +1,7 @@
 //! Vendor tool name lookup.
 
 use super::json_string_field::str_field;
+use super::windsurf;
 use crate::types::CallerKind;
 
 pub(super) fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
@@ -13,7 +14,9 @@ pub(super) fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) ->
             .and_then(|tc| tc.get("name"))
             .and_then(|n| n.as_str())
             .map(str::to_owned),
-        CallerKind::Windsurf => str_field(val, "tool").map(str::to_owned),
+        CallerKind::Windsurf => str_field(val, "tool")
+            .map(str::to_owned)
+            .or_else(|| windsurf::action_tool(val)),
         CallerKind::Cline => str_field(val, "toolName").map(str::to_owned),
         CallerKind::Amp => str_field(val, "name").map(str::to_owned),
         CallerKind::GeminiCli => str_field(val, "tool_name").map(str::to_owned),

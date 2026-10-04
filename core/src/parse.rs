@@ -5,6 +5,7 @@ mod tool_input_and_output;
 mod user_prompt;
 mod vendor_event_name;
 mod vendor_tool_name;
+mod windsurf;
 
 use crate::detect::detect_caller;
 use crate::events::normalize_event;
