@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   agent finishes a reply; only `SessionEnd` maps to `session:stop` now.
   Gemini CLI `AfterAgent` (once per turn) moves from `agent:stop` to
   `turn:stop`. Hooks that listened on `session:stop` or `agent:stop` for
-  per-turn stops must listen on `turn:stop`.
+  per-turn stops must listen on `turn:stop` ([#82]).
 
 ### Added
 
@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   files and leave `reply` null.
 - Hermes `post_llm_call` maps to `turn:stop`.
 - `transcriptPath` field: the caller's `transcript_path`, on every event that
-  carries it.
+  carries it ([#82]).
 
 ### Fixed
 
@@ -188,3 +188,4 @@ v0.1.2.
 [#73]: https://github.com/polyhook/polyhook/pull/73
 [#74]: https://github.com/polyhook/polyhook/pull/74
 [#75]: https://github.com/polyhook/polyhook/pull/75
+[#82]: https://github.com/polyhook/polyhook/pull/82
