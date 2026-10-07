@@ -457,7 +457,7 @@ fn claude_code_stop_hook_without_tool_fields() {
         "stop_hook_active": false
     }));
     assert_eq!(evt.caller, CallerKind::ClaudeCode);
-    assert_eq!(evt.event.to_string(), "session:stop");
+    assert_eq!(evt.event.to_string(), "turn:stop");
     assert!(evt.tool.is_none());
     assert_eq!(evt.session_id, "sess_cc_123");
 }

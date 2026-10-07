@@ -61,10 +61,12 @@ Types are auto-generated in every SDK from `core/schema.json` — not hand-writt
 
 ```typescript
 interface HookEvent {
-  event:     "tool:before" | "tool:after" | "session:start" | "session:stop" | "agent:stop" | "prompt:submit" | "notification";
+  event:     "tool:before" | "tool:after" | "session:start" | "session:stop" | "turn:stop" | "agent:stop" | "prompt:submit" | "notification";
   tool?:     string;                        // normalized tool name, e.g. "bash", "write_file"
   input?:    Record<string, unknown>;       // tool input arguments
   prompt?:   string;                        // user prompt (prompt:submit only)
+  reply?:    string;                        // agent's final reply text (turn:stop only)
+  transcriptPath?: string;                  // session transcript file, when the caller sends one
   output?:   Record<string, unknown>;       // tool output (tool:after only)
   sessionId: string;
   agentId?:  string;

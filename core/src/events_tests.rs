@@ -44,7 +44,7 @@ fn cc_session_end() {
 fn cc_stop() {
     assert_eq!(
         normalize_event("Stop", &CallerKind::ClaudeCode),
-        "session:stop"
+        "turn:stop"
     );
 }
 #[test]
@@ -207,7 +207,7 @@ fn gc_session_end() {
 fn gc_after_agent() {
     assert_eq!(
         normalize_event("AfterAgent", &CallerKind::GeminiCli),
-        "agent:stop"
+        "turn:stop"
     );
 }
 #[test]
@@ -305,6 +305,13 @@ fn hermes_subagent_stop() {
     assert_eq!(
         normalize_event("subagent_stop", &CallerKind::Hermes),
         "agent:stop"
+    );
+}
+#[test]
+fn hermes_post_llm_call() {
+    assert_eq!(
+        normalize_event("post_llm_call", &CallerKind::Hermes),
+        "turn:stop"
     );
 }
 #[test]

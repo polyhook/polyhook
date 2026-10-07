@@ -6,11 +6,43 @@ import "encoding/json"
 import "fmt"
 import "reflect"
 
-// Instructs the AI tool to proceed with the operation unchanged. This is the
-// default no-op response when a hook handler does not need to intervene.
-type ApproveResponse struct {
-	// Discriminator field identifying this as an approve response.
-	Action string `json:"action" yaml:"action" mapstructure:"action"`
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *ContextResponse) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["action"]; !ok || v == nil {
+		return fmt.Errorf("field action in ContextResponse: required")
+	}
+	if v, ok := raw["context"]; !ok || v == nil {
+		return fmt.Errorf("field context in ContextResponse: required")
+	}
+	type Plain ContextResponse
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = ContextResponse(plain)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *ApproveResponse) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["action"]; !ok || v == nil {
+		return fmt.Errorf("field action in ApproveResponse: required")
+	}
+	type Plain ApproveResponse
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = ApproveResponse(plain)
+	return nil
 }
 
 // Instructs the AI tool to abort the pending operation and surface the provided
@@ -23,76 +55,6 @@ type BlockResponse struct {
 	// blocked. Should be clear and actionable.
 	Message string `json:"message" yaml:"message" mapstructure:"message"`
 }
-
-type CallerKind string
-
-const CallerKindAmp CallerKind = "amp"
-const CallerKindClaudeCode CallerKind = "claude-code"
-const CallerKindCline CallerKind = "cline"
-const CallerKindCodex CallerKind = "codex"
-const CallerKindCursor CallerKind = "cursor"
-const CallerKindGeminiCli CallerKind = "gemini-cli"
-const CallerKindHermes CallerKind = "hermes"
-const CallerKindPi CallerKind = "pi"
-const CallerKindUnknown CallerKind = "unknown"
-const CallerKindWindsurf CallerKind = "windsurf"
-
-// Instructs the AI tool to add the given text to the model's context for this
-// turn. Meaningful for prompt:submit events; callers that cannot inject context
-// (Cursor, Windsurf, Amp) treat it as approve.
-type ContextResponse struct {
-	// Discriminator field identifying this as a context response.
-	Action string `json:"action" yaml:"action" mapstructure:"action"`
-
-	// Text to add to the model's context.
-	Context string `json:"context" yaml:"context" mapstructure:"context"`
-}
-
-// The normalized event payload delivered to every hook handler after polyhook.wasm
-// has parsed and translated the caller-specific stdin format.
-type HookEvent struct {
-	// Opaque identifier for the sub-agent that triggered this event. Present only
-	// when the hook is invoked from within a sub-agent context; null at the top-level
-	// agent.
-	AgentId *string `json:"agentId,omitempty" yaml:"agentId,omitempty" mapstructure:"agentId,omitempty"`
-
-	// The AI coding tool that invoked this hook binary, detected from environment
-	// variables and stdin format. Defaults to 'unknown' when detection fails.
-	Caller CallerKind `json:"caller" yaml:"caller" mapstructure:"caller"`
-
-	// Normalized event kind. One of: 'tool:before' (about to run a tool),
-	// 'tool:after' (tool finished), 'session:start' (new agent session opened),
-	// 'session:stop' (agent session closed), 'agent:stop' (sub-agent returned),
-	// 'prompt:submit' (user prompt about to reach the model), 'notification'
-	// (informational message, no response required).
-	Event HookEventEvent `json:"event" yaml:"event" mapstructure:"event"`
-
-	// Tool input arguments as a free-form object. Present for tool:before events;
-	// null otherwise. The shape depends on the specific tool being called.
-	Input interface{} `json:"input,omitempty" yaml:"input,omitempty" mapstructure:"input,omitempty"`
-
-	// Tool output as a free-form object. Present for tool:after events; null
-	// otherwise. The shape depends on the specific tool that produced the output.
-	Output interface{} `json:"output,omitempty" yaml:"output,omitempty" mapstructure:"output,omitempty"`
-
-	// The user's prompt text. Present for prompt:submit events; null for all other
-	// event kinds.
-	Prompt *string `json:"prompt,omitempty" yaml:"prompt,omitempty" mapstructure:"prompt,omitempty"`
-
-	// Opaque session identifier provided by the calling AI tool. Used to correlate
-	// events that belong to the same agent session.
-	SessionId string `json:"sessionId" yaml:"sessionId" mapstructure:"sessionId"`
-
-	// Normalized tool name (e.g. 'bash', 'write_file', 'read_file'). Present for
-	// tool:before and tool:after events; null for all other event kinds.
-	Tool *string `json:"tool,omitempty" yaml:"tool,omitempty" mapstructure:"tool,omitempty"`
-}
-
-type HookEventEvent string
-
-const HookEventEventAgentStop HookEventEvent = "agent:stop"
-const HookEventEventNotification HookEventEvent = "notification"
-const HookEventEventPromptSubmit HookEventEvent = "prompt:submit"
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *BlockResponse) UnmarshalJSON(b []byte) error {
@@ -115,79 +77,7 @@ func (j *BlockResponse) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-var enumValues_HookEventEvent = []interface{}{
-	"tool:before",
-	"tool:after",
-	"session:start",
-	"session:stop",
-	"agent:stop",
-	"prompt:submit",
-	"notification",
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *HookEventEvent) UnmarshalJSON(b []byte) error {
-	var v string
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	var ok bool
-	for _, expected := range enumValues_HookEventEvent {
-		if reflect.DeepEqual(v, expected) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_HookEventEvent, v)
-	}
-	*j = HookEventEvent(v)
-	return nil
-}
-
-const HookEventEventToolBefore HookEventEvent = "tool:before"
-const HookEventEventToolAfter HookEventEvent = "tool:after"
-const HookEventEventSessionStart HookEventEvent = "session:start"
-const HookEventEventSessionStop HookEventEvent = "session:stop"
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *ApproveResponse) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["action"]; !ok || v == nil {
-		return fmt.Errorf("field action in ApproveResponse: required")
-	}
-	type Plain ApproveResponse
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = ApproveResponse(plain)
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *ContextResponse) UnmarshalJSON(b []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-	if v, ok := raw["action"]; !ok || v == nil {
-		return fmt.Errorf("field action in ContextResponse: required")
-	}
-	if v, ok := raw["context"]; !ok || v == nil {
-		return fmt.Errorf("field context in ContextResponse: required")
-	}
-	type Plain ContextResponse
-	var plain Plain
-	if err := json.Unmarshal(b, &plain); err != nil {
-		return err
-	}
-	*j = ContextResponse(plain)
-	return nil
-}
+type CallerKind string
 
 var enumValues_CallerKind = []interface{}{
 	"claude-code",
@@ -220,6 +110,131 @@ func (j *CallerKind) UnmarshalJSON(b []byte) error {
 	}
 	*j = CallerKind(v)
 	return nil
+}
+
+const CallerKindClaudeCode CallerKind = "claude-code"
+const CallerKindCursor CallerKind = "cursor"
+const CallerKindWindsurf CallerKind = "windsurf"
+const CallerKindCline CallerKind = "cline"
+const CallerKindAmp CallerKind = "amp"
+const CallerKindGeminiCli CallerKind = "gemini-cli"
+const CallerKindHermes CallerKind = "hermes"
+const CallerKindPi CallerKind = "pi"
+const CallerKindCodex CallerKind = "codex"
+
+// Instructs the AI tool to add the given text to the model's context for this
+// turn. Meaningful for prompt:submit events; callers that cannot inject context
+// (Cursor, Windsurf, Amp) treat it as approve.
+type ContextResponse struct {
+	// Discriminator field identifying this as a context response.
+	Action string `json:"action" yaml:"action" mapstructure:"action"`
+
+	// Text to add to the model's context.
+	Context string `json:"context" yaml:"context" mapstructure:"context"`
+}
+
+const CallerKindUnknown CallerKind = "unknown"
+const HookEventEventPromptSubmit HookEventEvent = "prompt:submit"
+
+type HookEventEvent string
+
+var enumValues_HookEventEvent = []interface{}{
+	"tool:before",
+	"tool:after",
+	"session:start",
+	"session:stop",
+	"turn:stop",
+	"agent:stop",
+	"prompt:submit",
+	"notification",
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *HookEventEvent) UnmarshalJSON(b []byte) error {
+	var v string
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_HookEventEvent {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_HookEventEvent, v)
+	}
+	*j = HookEventEvent(v)
+	return nil
+}
+
+const HookEventEventToolBefore HookEventEvent = "tool:before"
+const HookEventEventToolAfter HookEventEvent = "tool:after"
+const HookEventEventSessionStart HookEventEvent = "session:start"
+const HookEventEventSessionStop HookEventEvent = "session:stop"
+const HookEventEventTurnStop HookEventEvent = "turn:stop"
+const HookEventEventAgentStop HookEventEvent = "agent:stop"
+
+// Instructs the AI tool to proceed with the operation unchanged. This is the
+// default no-op response when a hook handler does not need to intervene.
+type ApproveResponse struct {
+	// Discriminator field identifying this as an approve response.
+	Action string `json:"action" yaml:"action" mapstructure:"action"`
+}
+
+const HookEventEventNotification HookEventEvent = "notification"
+
+// The normalized event payload delivered to every hook handler after polyhook.wasm
+// has parsed and translated the caller-specific stdin format.
+type HookEvent struct {
+	// Opaque identifier for the sub-agent that triggered this event. Present only
+	// when the hook is invoked from within a sub-agent context; null at the top-level
+	// agent.
+	AgentId *string `json:"agentId,omitempty" yaml:"agentId,omitempty" mapstructure:"agentId,omitempty"`
+
+	// The AI coding tool that invoked this hook binary, detected from environment
+	// variables and stdin format. Defaults to 'unknown' when detection fails.
+	Caller CallerKind `json:"caller" yaml:"caller" mapstructure:"caller"`
+
+	// Normalized event kind. One of: 'tool:before' (about to run a tool),
+	// 'tool:after' (tool finished), 'session:start' (new agent session opened),
+	// 'session:stop' (agent session closed), 'turn:stop' (agent finished its reply
+	// for the turn), 'agent:stop' (sub-agent returned), 'prompt:submit' (user prompt
+	// about to reach the model), 'notification' (informational message, no response
+	// required).
+	Event HookEventEvent `json:"event" yaml:"event" mapstructure:"event"`
+
+	// Tool input arguments as a free-form object. Present for tool:before events;
+	// null otherwise. The shape depends on the specific tool being called.
+	Input interface{} `json:"input,omitempty" yaml:"input,omitempty" mapstructure:"input,omitempty"`
+
+	// Tool output as a free-form object. Present for tool:after events; null
+	// otherwise. The shape depends on the specific tool that produced the output.
+	Output interface{} `json:"output,omitempty" yaml:"output,omitempty" mapstructure:"output,omitempty"`
+
+	// The user's prompt text. Present for prompt:submit events; null for all other
+	// event kinds.
+	Prompt *string `json:"prompt,omitempty" yaml:"prompt,omitempty" mapstructure:"prompt,omitempty"`
+
+	// The agent's final reply text for the turn. Present for turn:stop events when
+	// the caller sends it (Claude Code, Codex and Pi `last_assistant_message`, Gemini
+	// CLI `prompt_response`, Hermes `assistant_response`); for Claude Code-format
+	// payloads without it, the native Rust SDK reads the last assistant text from
+	// transcriptPath (WASM SDKs cannot read files). Null for all other event kinds.
+	Reply *string `json:"reply,omitempty" yaml:"reply,omitempty" mapstructure:"reply,omitempty"`
+
+	// Opaque session identifier provided by the calling AI tool. Used to correlate
+	// events that belong to the same agent session.
+	SessionId string `json:"sessionId" yaml:"sessionId" mapstructure:"sessionId"`
+
+	// Normalized tool name (e.g. 'bash', 'write_file', 'read_file'). Present for
+	// tool:before and tool:after events; null for all other event kinds.
+	Tool *string `json:"tool,omitempty" yaml:"tool,omitempty" mapstructure:"tool,omitempty"`
+
+	// Path to the session transcript file, when the caller sends one (Claude Code,
+	// Codex, Pi and Gemini CLI `transcript_path`); null otherwise.
+	TranscriptPath *string `json:"transcriptPath,omitempty" yaml:"transcriptPath,omitempty" mapstructure:"transcriptPath,omitempty"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
