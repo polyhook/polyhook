@@ -1,21 +1,7 @@
 use super::detect_caller;
 use crate::CallerKind;
 
-const AGENT_ENV_VARS: &[&str] = &[
-    "POLYHOOK_CALLER",
-    "CLAUDE_CODE_VERSION",
-    "CLAUDE_PROJECT_DIR",
-    "CURSOR_SESSION_ID",
-    "WINDSURF_SESSION_ID",
-    "CLINE_SESSION_ID",
-    "AMP_SESSION_ID",
-    "GEMINI_PROJECT_DIR",
-];
-
-fn with_clean_env<F: FnOnce()>(f: F) {
-    let vars: Vec<(&str, Option<&str>)> = AGENT_ENV_VARS.iter().map(|k| (*k, None)).collect();
-    temp_env::with_vars(vars, f);
-}
+use crate::test_env::with_clean_env;
 
 #[test]
 fn claude_code_version_env_var_detected() {
