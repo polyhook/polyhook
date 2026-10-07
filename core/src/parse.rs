@@ -1,3 +1,4 @@
+mod assistant_reply;
 mod event_kind_inference;
 mod json_string_field;
 mod session_and_agent_ids;
@@ -10,6 +11,7 @@ use crate::detect::detect_caller;
 use crate::events::normalize_event;
 use crate::tools::normalize_tool;
 use crate::types::{HookEvent, HookEventEvent};
+use assistant_reply::{extract_reply, extract_transcript_path};
 use event_kind_inference::infer_event;
 use session_and_agent_ids::{extract_agent_id, extract_session_id};
 use tool_input_and_output::{extract_input, extract_output};
@@ -54,6 +56,13 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
         None
     };
 
+    let transcript_path = extract_transcript_path(&val);
+    let reply = if event == HookEventEvent::TurnStop {
+        extract_reply(&val, caller, transcript_path.as_deref())
+    } else {
+        None
+    };
+
     // --- session / agent ids ---
     let session_id = extract_session_id(&val);
     let agent_id = extract_agent_id(&val);
@@ -67,6 +76,8 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
         agent_id,
         caller,
         prompt,
+        reply,
+        transcript_path,
     })
 }
 

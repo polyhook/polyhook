@@ -59,13 +59,14 @@ export interface PolyhookSchema {
  */
 export interface HookEvent {
   /**
-   * Normalized event kind. One of: 'tool:before' (about to run a tool), 'tool:after' (tool finished), 'session:start' (new agent session opened), 'session:stop' (agent session closed), 'agent:stop' (sub-agent returned), 'prompt:submit' (user prompt about to reach the model), 'notification' (informational message, no response required).
+   * Normalized event kind. One of: 'tool:before' (about to run a tool), 'tool:after' (tool finished), 'session:start' (new agent session opened), 'session:stop' (agent session closed), 'turn:stop' (agent finished its reply for the turn), 'agent:stop' (sub-agent returned), 'prompt:submit' (user prompt about to reach the model), 'notification' (informational message, no response required).
    */
   event:
     | "tool:before"
     | "tool:after"
     | "session:start"
     | "session:stop"
+    | "turn:stop"
     | "agent:stop"
     | "prompt:submit"
     | "notification";
@@ -73,6 +74,14 @@ export interface HookEvent {
    * The user's prompt text. Present for prompt:submit events; null for all other event kinds.
    */
   prompt?: string | null;
+  /**
+   * The agent's final reply text for the turn. Present for turn:stop events when the caller sends it (Claude Code, Codex and Pi `last_assistant_message`, Gemini CLI `prompt_response`, Hermes `assistant_response`); for Claude Code-format payloads without it, the native Rust SDK reads the last assistant text from transcriptPath (WASM SDKs cannot read files). Null for all other event kinds.
+   */
+  reply?: string | null;
+  /**
+   * Path to the session transcript file, when the caller sends one (Claude Code, Codex, Pi and Gemini CLI `transcript_path`); null otherwise.
+   */
+  transcriptPath?: string | null;
   /**
    * Normalized tool name (e.g. 'bash', 'write_file', 'read_file'). Present for tool:before and tool:after events; null for all other event kinds.
    */

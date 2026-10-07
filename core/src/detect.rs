@@ -76,6 +76,7 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             "pre_tool_call"
             | "post_tool_call"
             | "pre_llm_call"
+            | "post_llm_call"
             | "on_session_start"
             | "on_session_end"
             | "on_session_finalize"

@@ -26,7 +26,9 @@ fn normalize_claude_code_event(vendor: &str) -> Option<&'static str> {
         "PreToolUse" => Some("tool:before"),
         "PostToolUse" => Some("tool:after"),
         "Startup" | "SessionStart" => Some("session:start"),
-        "SessionEnd" | "Stop" => Some("session:stop"),
+        "SessionEnd" => Some("session:stop"),
+        // Stop fires each time the agent finishes a reply, not at session end.
+        "Stop" => Some("turn:stop"),
         "SubagentStop" => Some("agent:stop"),
         "UserPromptSubmit" => Some("prompt:submit"),
         "Notification" => Some("notification"),
@@ -84,7 +86,8 @@ fn normalize_gemini_cli_event(vendor: &str) -> Option<&'static str> {
         "AfterTool" => Some("tool:after"),
         "SessionStart" => Some("session:start"),
         "SessionEnd" => Some("session:stop"),
-        "AfterAgent" => Some("agent:stop"),
+        // AfterAgent fires once per turn, after the final response.
+        "AfterAgent" => Some("turn:stop"),
         "BeforeAgent" => Some("prompt:submit"),
         "Notification" => Some("notification"),
         _ => None,
@@ -98,6 +101,8 @@ fn normalize_hermes_event(vendor: &str) -> Option<&'static str> {
         "on_session_start" => Some("session:start"),
         "on_session_end" | "on_session_finalize" => Some("session:stop"),
         "subagent_stop" => Some("agent:stop"),
+        // post_llm_call fires once per successful turn, after the final response.
+        "post_llm_call" => Some("turn:stop"),
         // pre_llm_call fires once per user turn and can inject context.
         "pre_llm_call" => Some("prompt:submit"),
         _ => None,

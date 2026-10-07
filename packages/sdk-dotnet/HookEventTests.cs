@@ -48,6 +48,16 @@ public class HookEventTests
     }
 
     [Fact]
+    public void Deserialise_TurnStop_CarriesReply()
+    {
+        var json = """{"event":"turn:stop","sessionId":"s","caller":"claude-code","reply":"done","transcriptPath":"/t.jsonl"}""";
+        var evt  = JsonSerializer.Deserialize<HookEvent>(json, s_opts)!;
+        Assert.Equal(EventKind.TurnStop, evt.Event);
+        Assert.Equal("done",             evt.Reply);
+        Assert.Equal("/t.jsonl",         evt.TranscriptPath);
+    }
+
+    [Fact]
     public void CallerKind_UnknownFallback_Deserialises()
     {
         var json = """{"event":"session:start","sessionId":"s","caller":"unknown"}""";

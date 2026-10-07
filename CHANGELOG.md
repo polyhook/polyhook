@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** Claude Code (and Codex, Pi) `Stop` now normalizes to the new
+  `turn:stop` event instead of `session:stop`. `Stop` fires each time the
+  agent finishes a reply; only `SessionEnd` maps to `session:stop` now.
+  Gemini CLI `AfterAgent` (once per turn) moves from `agent:stop` to
+  `turn:stop`. Hooks that listened on `session:stop` or `agent:stop` for
+  per-turn stops must listen on `turn:stop` ([#82]).
+
+### Added
+
+- `turn:stop` event with a `reply` field: the agent's final reply text.
+  Filled from Claude Code/Codex/Pi `last_assistant_message`, Gemini CLI
+  `prompt_response` and Hermes `assistant_response`. When a Claude
+  Code-format payload has no `last_assistant_message`, the native Rust SDK
+  reads the last assistant text from the transcript; WASM SDKs cannot read
+  files and leave `reply` null.
+- Hermes `post_llm_call` maps to `turn:stop`.
+- `transcriptPath` field: the caller's `transcript_path`, on every event that
+  carries it ([#82]).
+
 ### Fixed
 
 - Claude Code lifecycle hooks (`Stop`, `SubagentStop`, `UserPromptSubmit`,
@@ -167,3 +188,4 @@ v0.1.2.
 [#73]: https://github.com/polyhook/polyhook/pull/73
 [#74]: https://github.com/polyhook/polyhook/pull/74
 [#75]: https://github.com/polyhook/polyhook/pull/75
+[#82]: https://github.com/polyhook/polyhook/pull/82
