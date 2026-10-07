@@ -1,6 +1,12 @@
-use super::parse_event;
+use crate::test_env::with_clean_env;
+use crate::types::HookEvent;
 use crate::CallerKind;
 use serde_json::json;
+
+// Parse with the agent env vars cleared, under temp_env's lock.
+fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
+    with_clean_env(|| super::parse_event(raw))
+}
 
 fn fixture(name: &str) -> Vec<u8> {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

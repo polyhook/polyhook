@@ -1,5 +1,6 @@
 use super::last_assistant_text;
 use crate::parse::parse_event;
+use crate::test_env::with_clean_env;
 use crate::{CallerKind, HookEvent};
 use serde_json::json;
 use std::path::PathBuf;
@@ -17,21 +18,7 @@ fn fixture(name: &str) -> serde_json::Value {
 
 /// Parse with every caller-detection env var unset, so the payload shape decides.
 fn parse(payload: &serde_json::Value) -> HookEvent {
-    let vars: Vec<(&str, Option<&str>)> = [
-        "POLYHOOK_CALLER",
-        "CLAUDE_CODE_VERSION",
-        "CURSOR_SESSION_ID",
-        "WINDSURF_SESSION_ID",
-        "CLINE_SESSION_ID",
-        "AMP_SESSION_ID",
-        "GEMINI_PROJECT_DIR",
-    ]
-    .iter()
-    .map(|k| (*k, None))
-    .collect();
-    temp_env::with_vars(vars, || {
-        parse_event(payload.to_string().as_bytes()).expect("parse failed")
-    })
+    with_clean_env(|| parse_event(payload.to_string().as_bytes()).expect("parse failed"))
 }
 
 #[test]

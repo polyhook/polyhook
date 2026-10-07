@@ -1,4 +1,10 @@
 use super::*;
+use crate::test_env::with_clean_env;
+
+// Parse with the agent env vars cleared, under temp_env's lock.
+unsafe fn parse(ptr: *const u8, len: usize) -> *mut u8 {
+    with_clean_env(|| unsafe { super::parse(ptr, len) })
+}
 
 // Helper: read a length-prefixed buffer returned by parse/serialize.
 // Returns the payload bytes and the total buffer length (4 + payload).

@@ -66,5 +66,8 @@ pub fn respond_to(w: &mut impl Write, response: &HookResponse) -> Result<(), Str
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+mod test_env;
+
+#[cfg(test)]
 #[path = "lib_tests.rs"]
 mod tests;
