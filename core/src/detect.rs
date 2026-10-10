@@ -114,6 +114,13 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             return CallerKind::ClaudeCode;
         }
 
+        // Windsurf Cascade's real hook contract: every payload names its
+        // event in `agent_action_name` and carries a `tool_info` object
+        // (https://docs.windsurf.com/windsurf/cascade/hooks).
+        if has("agent_action_name") {
+            return CallerKind::Windsurf;
+        }
+
         if has("tool_name") && has("tool_input") {
             return CallerKind::ClaudeCode;
         }
