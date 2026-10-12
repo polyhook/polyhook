@@ -147,7 +147,7 @@ jobs:
           fi
           git tag -f "packages/sdk-go/${GITHUB_REF_NAME}"
           git push origin -f "packages/sdk-go/${GITHUB_REF_NAME}"
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: polyhook.wasm
           generate_release_notes: true
