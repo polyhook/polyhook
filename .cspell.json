@@ -30,6 +30,7 @@
     "polyhook",
     "POLYHOOK",
     "libpolyhook",
+    "gomod",
     "serde",
     "bindgen",
     "wasm",
