@@ -49,8 +49,10 @@ fn normalize_cursor_event(vendor: &str) -> Option<&'static str> {
 
 fn normalize_windsurf_event(vendor: &str) -> Option<&'static str> {
     match vendor {
-        "pre_tool" => Some("tool:before"),
-        "post_tool" => Some("tool:after"),
+        "pre_tool" | "pre_run_command" | "pre_mcp_tool_use" | "pre_read_code"
+        | "pre_write_code" => Some("tool:before"),
+        "post_tool" | "post_run_command" | "post_mcp_tool_use" | "post_read_code"
+        | "post_write_code" => Some("tool:after"),
         "session_start" => Some("session:start"),
         "session_end" => Some("session:stop"),
         "notification" => Some("notification"),
