@@ -68,6 +68,10 @@ jobs:
           path: packages/sdk-ts
       - run: pnpm install
         working-directory: packages/sdk-ts
+      # Runs before the tests: vitest does not type-check, so only tsc catches
+      # a broken generated types.ts before it reaches the published .d.ts.
+      - run: pnpm run typecheck
+        working-directory: packages/sdk-ts
       - run: pnpm test
         working-directory: packages/sdk-ts
 

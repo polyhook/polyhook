@@ -60,8 +60,14 @@ schema/ts: $(SCHEMA)
 	    --no-additionalProperties \
 	    > $(TS_OUT)
 	@# Fix dedup artifact: tool emits CallerKind1 for the $ref inline use; collapse to CallerKind.
-	perl -0pi.bak -e 's{/\*\*\n(?: \*.*\n)* \*/\nexport type CallerKind1 = [^\n]+;\n}{}' $(TS_OUT) && rm -f $(TS_OUT).bak
+	@# The union is pretty-printed across several lines, so match up to the ';'
+	@# rather than to the end of the line.
+	perl -0pi.bak -e 's{/\*\*\n(?: \*.*\n)* \*/\nexport type CallerKind1 =[^;]+;\n}{}' $(TS_OUT) && rm -f $(TS_OUT).bak
 	sed -i.bak 's/CallerKind1/CallerKind/g' $(TS_OUT) && rm -f $(TS_OUT).bak
+	@# Guard: a surviving duplicate declaration makes the published .d.ts fail
+	@# TS2300 for every consumer that does not set skipLibCheck.
+	@test "$$(grep -c '^export type CallerKind' $(TS_OUT))" = 1 \
+	    || { echo "ERROR: duplicate CallerKind declaration in $(TS_OUT)"; exit 1; }
 	@echo "Done: $(TS_OUT)"
 
 # ── schema/go ─────────────────────────────────────────────────────────────────
