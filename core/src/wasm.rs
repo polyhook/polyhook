@@ -142,7 +142,7 @@ pub unsafe extern "C" fn serialize(ptr: *const u8, len: usize) -> *mut u8 {
                     let input = val
                         .get("input")
                         .cloned()
-                        .unwrap_or(serde_json::Value::Object(Default::default()));
+                        .unwrap_or_else(|| serde_json::Value::Object(serde_json::Map::new()));
                     crate::types::HookResponse::modify(input)
                 }
                 Some("context") => {
