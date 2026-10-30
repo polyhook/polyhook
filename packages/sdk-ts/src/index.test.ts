@@ -542,6 +542,60 @@ describe("getWasm() — WASM file loads successfully", () => {
     expect(event.caller).toBe("claude-code");
     expect(event.event).toBe("tool:before");
   });
+
+  test("hands the host environment to set_env when the export exists", async () => {
+    const wasm = buildMockWasm((json) => JSON.parse(json) as HookEvent);
+    const seen: string[] = [];
+    const wasmWithEnv = {
+      ...wasm,
+      set_env(ptr: number, len: number) {
+        const bytes = new Uint8Array(wasm.memory.buffer, ptr, len);
+        seen.push(new TextDecoder().decode(bytes));
+      },
+    };
+
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      Buffer.from([0]) as unknown as string,
+    );
+    (globalThis as Record<string, unknown>).WebAssembly = {
+      instantiate: async (_bytes: unknown) => ({
+        instance: { exports: wasmWithEnv },
+      }),
+    };
+
+    process.env.POLYHOOK_TEST_MARKER = "marker-value";
+    try {
+      mockStdin(CLAUDE_CODE_PRE_TOOL_CALL);
+      await read();
+    } finally {
+      delete process.env.POLYHOOK_TEST_MARKER;
+    }
+
+    expect(seen).toHaveLength(1);
+    const pushed = JSON.parse(seen[0]) as Record<string, string>;
+    expect(pushed.POLYHOOK_TEST_MARKER).toBe("marker-value");
+    // Only string values cross the boundary.
+    for (const value of Object.values(pushed)) {
+      expect(typeof value).toBe("string");
+    }
+  });
+
+  test("works when the WASM build has no set_env export", async () => {
+    // Older//minimal builds must keep loading rather than throwing.
+    const wasm = buildMockWasm((json) => JSON.parse(json) as HookEvent);
+    expect("set_env" in wasm).toBe(false);
+
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      Buffer.from([0]) as unknown as string,
+    );
+    (globalThis as Record<string, unknown>).WebAssembly = {
+      instantiate: async (_bytes: unknown) => ({ instance: { exports: wasm } }),
+    };
+
+    mockStdin(CLAUDE_CODE_PRE_TOOL_CALL);
+    const event = await read();
+    expect(event.caller).toBe("claude-code");
+  });
 });
 
 // ---------------------------------------------------------------------------

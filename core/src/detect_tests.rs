@@ -301,3 +301,92 @@ fn claude_code_session_start_with_project_dir_env_beats_gemini_heuristic() {
         });
     });
 }
+
+// ---------------------------------------------------------------------------
+// Environment overlay (set by the WASM SDKs, which have no real environment)
+// ---------------------------------------------------------------------------
+
+use super::{env_var, set_env_overlay};
+use std::collections::HashMap;
+
+fn overlay(pairs: &[(&str, &str)]) -> HashMap<String, String> {
+    pairs
+        .iter()
+        .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+        .collect()
+}
+
+// Run `f` with an overlay installed, always clearing it afterwards so the
+// thread-local cannot leak into another test on the same thread.
+fn with_overlay<R>(pairs: &[(&str, &str)], f: impl FnOnce() -> R) -> R {
+    set_env_overlay(Some(overlay(pairs)));
+    let out = f();
+    set_env_overlay(None);
+    out
+}
+
+#[test]
+fn overlay_supplies_polyhook_caller_when_process_env_is_empty() {
+    let val = serde_json::json!({});
+    with_clean_env(|| {
+        with_overlay(&[("POLYHOOK_CALLER", "windsurf")], || {
+            assert_eq!(detect_caller(&val), CallerKind::Windsurf);
+        });
+    });
+}
+
+#[test]
+fn overlay_polyhook_caller_beats_json_shape_heuristic() {
+    // Shape says Cursor; the explicit override must win (priority 1 over 3).
+    let val = serde_json::json!({"type": "BeforeToolCall", "toolCall": {"name": "shell"}});
+    with_clean_env(|| {
+        assert_eq!(detect_caller(&val), CallerKind::Cursor);
+        with_overlay(&[("POLYHOOK_CALLER", "windsurf")], || {
+            assert_eq!(detect_caller(&val), CallerKind::Windsurf);
+        });
+    });
+}
+
+#[test]
+fn overlay_supplies_agent_specific_env_vars() {
+    let val = serde_json::json!({});
+    with_clean_env(|| {
+        for (var, want) in [
+            ("CLAUDE_CODE_VERSION", CallerKind::ClaudeCode),
+            ("CURSOR_SESSION_ID", CallerKind::Cursor),
+            ("WINDSURF_SESSION_ID", CallerKind::Windsurf),
+            ("CLINE_SESSION_ID", CallerKind::Cline),
+            ("AMP_SESSION_ID", CallerKind::Amp),
+            ("GEMINI_PROJECT_DIR", CallerKind::GeminiCli),
+        ] {
+            with_overlay(&[(var, "x")], || {
+                assert_eq!(detect_caller(&val), want, "{var}");
+            });
+        }
+    });
+}
+
+#[test]
+fn overlay_without_the_key_does_not_fall_back_to_process_env() {
+    // A host that pushed its env in has already told us everything it has, so
+    // a miss must stay a miss rather than reading the real environment.
+    with_clean_env(|| {
+        temp_env::with_var("POLYHOOK_CALLER", Some("amp"), || {
+            assert_eq!(env_var("POLYHOOK_CALLER").as_deref(), Some("amp"));
+            with_overlay(&[("UNRELATED", "1")], || {
+                assert_eq!(env_var("POLYHOOK_CALLER"), None);
+            });
+            // Cleared again: the real environment is visible once more.
+            assert_eq!(env_var("POLYHOOK_CALLER").as_deref(), Some("amp"));
+        });
+    });
+}
+
+#[test]
+fn no_overlay_reads_the_process_env() {
+    with_clean_env(|| {
+        temp_env::with_var("POLYHOOK_CALLER", Some("codex"), || {
+            assert_eq!(env_var("POLYHOOK_CALLER").as_deref(), Some("codex"));
+        });
+    });
+}

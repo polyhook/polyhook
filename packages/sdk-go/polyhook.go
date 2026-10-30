@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/tetratelabs/wazero"
@@ -155,7 +156,7 @@ func initRuntime() (*wasmRuntime, error) {
 		return nil, err
 	}
 
-	return &wasmRuntime{
+	wr := &wasmRuntime{
 		ctx:       ctx,
 		rt:        rt,
 		mod:       mod,
@@ -163,7 +164,49 @@ func initRuntime() (*wasmRuntime, error) {
 		dealloc:   deallocFn,
 		parse:     parseFn,
 		serialize: serializeFn,
-	}, nil
+	}
+
+	// Best-effort: a module without set_env still works, just without
+	// env-var caller detection.
+	if setEnv := mod.ExportedFunction("set_env"); setEnv != nil {
+		_ = wr.pushEnv(setEnv)
+	}
+
+	return wr, nil
+}
+
+// pushEnv hands the host environment to the WASM module's caller detector.
+//
+// The module targets wasm32-unknown-unknown, which has no environment of its
+// own, so without this every env-var caller heuristic — including the
+// documented POLYHOOK_CALLER override — is silently ignored.
+func (wr *wasmRuntime) pushEnv(setEnv api.Function) error {
+	vars := make(map[string]string)
+	for _, entry := range os.Environ() {
+		// Split on the first '=' only; values may contain '='.
+		if name, value, found := strings.Cut(entry, "="); found {
+			vars[name] = value
+		}
+	}
+
+	payload, err := json.Marshal(vars)
+	if err != nil {
+		return fmt.Errorf("polyhook: marshal env: %w", err)
+	}
+
+	ptr, err := wr.wasmAlloc(uint32(len(payload)))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = wr.wasmDealloc(ptr, uint32(len(payload))) }()
+
+	if err := wr.wasmWrite(ptr, payload); err != nil {
+		return err
+	}
+	if _, err := setEnv.Call(wr.ctx, uint64(ptr), uint64(len(payload))); err != nil {
+		return fmt.Errorf("polyhook: set_env: %w", err)
+	}
+	return nil
 }
 
 // ---------------------------------------------------------------------------
