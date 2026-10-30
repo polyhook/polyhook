@@ -109,6 +109,13 @@ Detection runs in priority order:
 3. Stdin schema heuristics — shape of the top-level JSON object
 4. Falls back to `caller: "unknown"` with best-effort parse
 
+Steps 1 and 2 read the environment through `detect::env_var`, not `std::env::var`
+directly. The WASM module is built for `wasm32-unknown-unknown`, which has no
+environment of its own, so each SDK shim pushes the host environment across the
+ABI with the `set_env(ptr, len)` export (a JSON `{name: value}` object) right
+after instantiating the module. Without that call both env steps are skipped and
+detection silently falls through to the stdin heuristics.
+
 ---
 
 ## Tool Name Normalization

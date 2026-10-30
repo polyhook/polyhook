@@ -12,7 +12,9 @@
 ///   4. Read the 4-byte LE length from the returned pointer, then the payload.
 ///   5. Call `dealloc` on both the input buffer and the output buffer.
 use std::cell::RefCell;
+use std::collections::HashMap;
 
+use crate::detect;
 use crate::parse::parse_event;
 use crate::response::serialize_response_with_event;
 use crate::types::{CallerKind, HookEventEvent};
@@ -71,6 +73,43 @@ pub unsafe extern "C" fn dealloc(ptr: *mut u8, len: usize) {
 // ---------------------------------------------------------------------------
 // Core exports
 // ---------------------------------------------------------------------------
+
+/// Hand the host process environment to the detector.
+///
+/// `wasm32-unknown-unknown` has no environment, so `std::env::var` inside this
+/// module always reports "not present" and every env-var caller heuristic —
+/// including the documented `POLYHOOK_CALLER` override — is silently skipped.
+/// SDK shims call this once after instantiating the module, passing a JSON
+/// object of `{name: value}` string pairs, so `detect_caller` can honour them.
+///
+/// `len == 0` (or an unparsable payload) clears the overlay, restoring plain
+/// `std::env::var` lookups. Non-string values are ignored.
+///
+/// # Safety
+///
+/// `ptr` must point to `len` consecutive readable bytes valid for the
+/// duration of this call. Nothing is returned, so there is nothing to free.
+#[no_mangle]
+pub unsafe extern "C" fn set_env(ptr: *const u8, len: usize) {
+    if len == 0 {
+        detect::set_env_overlay(None);
+        return;
+    }
+
+    let input = std::slice::from_raw_parts(ptr, len);
+    let parsed = serde_json::from_slice::<HashMap<String, serde_json::Value>>(input)
+        .ok()
+        .map(|map| {
+            map.into_iter()
+                .filter_map(|(k, v)| match v {
+                    serde_json::Value::String(s) => Some((k, s)),
+                    _ => None,
+                })
+                .collect::<HashMap<String, String>>()
+        });
+
+    detect::set_env_overlay(parsed);
+}
 
 /// Parse raw JSON bytes into a normalised `HookEvent` and return it as
 /// length-prefixed JSON.
