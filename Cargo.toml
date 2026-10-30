@@ -13,6 +13,10 @@ warnings = "deny"
 # forwards its argument to a method call (e.g. `|s| s.to_owned()`).
 redundant_closure_for_method_calls = "deny"
 all = { level = "deny", priority = -1 }
+# Build the fallback value lazily: `unwrap_or(f())` / `or(f())` evaluate `f()`
+# even on the happy path, so the work is wasted whenever the value is present.
+# Prefer the `_else` form (or `unwrap_or_default`).
+or_fun_call = "deny"
 # Require an explicit trailing `;` on unit-returning statements so a block's
 # final expression unambiguously signals whether it yields a value.
 semicolon_if_nothing_returned = "deny"
