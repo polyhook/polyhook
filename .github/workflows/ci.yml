@@ -90,6 +90,11 @@ jobs:
         with:
           name: polyhook-wasm
           path: packages/sdk-go
+      - name: Check formatting (gofmt)
+        run: test -z "$(gofmt -l . | tee /dev/stderr)"
+        working-directory: packages/sdk-go
+      - run: go vet ./...
+        working-directory: packages/sdk-go
       - run: go test ./...
         working-directory: packages/sdk-go
 
