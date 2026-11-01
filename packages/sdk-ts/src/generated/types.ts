@@ -12,14 +12,24 @@
  * via the `definition` "CallerKind".
  */
 export type CallerKind =
-  "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "codex" | "unknown";
+  | "claude-code"
+  | "cursor"
+  | "windsurf"
+  | "cline"
+  | "amp"
+  | "gemini-cli"
+  | "hermes"
+  | "pi"
+  | "codex"
+  | "unknown";
 /**
  * The response a hook handler returns to polyhook.wasm, which translates it into the format expected by the detected caller. Discriminated on the 'action' field.
  *
  * This interface was referenced by `PolyhookSchema`'s JSON-Schema
  * via the `definition` "HookResponse".
  */
-export type HookResponse = ApproveResponse | BlockResponse | ModifyResponse | ContextResponse;
+export type HookResponse =
+  ApproveResponse | BlockResponse | ModifyResponse | ContextResponse;
 
 /**
  * Source-of-truth type definitions for the polyhook SDK. All language-specific types (Rust, TypeScript, Go, Python, .NET) are generated from this file.
