@@ -24,7 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Wasmtime" Version="48.0.2" />
-    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="System.Text.Json" Version="10.0.14" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="polyhook.wasm" />
