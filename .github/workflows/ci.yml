@@ -68,6 +68,8 @@ jobs:
           path: packages/sdk-ts
       - run: pnpm install
         working-directory: packages/sdk-ts
+      - run: npx tsc --noEmit
+        working-directory: packages/sdk-ts
       - run: pnpm test
         working-directory: packages/sdk-ts
 
