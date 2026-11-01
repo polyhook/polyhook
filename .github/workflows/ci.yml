@@ -72,6 +72,8 @@ jobs:
         working-directory: packages/sdk-ts
       - run: pnpm test
         working-directory: packages/sdk-ts
+      - run: pnpm build
+        working-directory: packages/sdk-ts
 
   # ── Go ──────────────────────────────────────────────────────────────────────
   test-go:
