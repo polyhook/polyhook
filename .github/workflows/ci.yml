@@ -149,7 +149,7 @@ jobs:
         with:
           name: lcov.info
           path: lcov.info
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v7
         with:
           files: lcov.info
           fail_ci_if_error: false
