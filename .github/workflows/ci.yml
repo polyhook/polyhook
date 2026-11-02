@@ -62,7 +62,7 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: packages/sdk-ts/pnpm-lock.yaml
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: polyhook-wasm
           path: packages/sdk-ts
@@ -86,7 +86,7 @@ jobs:
         with:
           go-version-file: packages/sdk-go/go.mod
           cache-dependency-path: packages/sdk-go/go.sum
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: polyhook-wasm
           path: packages/sdk-go
@@ -106,7 +106,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v7
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: polyhook-wasm
           path: packages/sdk-python/src/polyhook
@@ -125,7 +125,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.x
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: polyhook-wasm
           path: packages/sdk-dotnet
