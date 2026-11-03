@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -215,6 +216,8 @@ public static class Polyhook
         var dealloc = instance.GetAction<int, int>("dealloc")
             ?? throw new InvalidOperationException("WASM export 'dealloc' not found.");
 
+        PushEnv(instance, memory, alloc, dealloc);
+
         // --- write input into WASM memory ---
         int inputLen = inputBytes.Length;
         int inputPtr = alloc(inputLen);
@@ -237,6 +240,46 @@ public static class Polyhook
         dealloc(resultPtr, 4 + payloadLen);
 
         return payload;
+    }
+
+    /// <summary>
+    /// Hands the host environment to the WASM module's caller detector.
+    /// </summary>
+    /// <remarks>
+    /// The module targets <c>wasm32-unknown-unknown</c>, which has no
+    /// environment of its own, so without this every env-var caller heuristic
+    /// — including the documented <c>POLYHOOK_CALLER</c> override — is
+    /// silently ignored. Absent on older WASM builds, hence the null check.
+    /// </remarks>
+    private static void PushEnv(
+        Instance instance,
+        Memory memory,
+        Func<int, int> alloc,
+        Action<int, int> dealloc)
+    {
+        var setEnv = instance.GetAction<int, int>("set_env");
+        if (setEnv is null) return;
+
+        var vars = new Dictionary<string, string>();
+        foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        {
+            if (entry.Key is string key && entry.Value is string value)
+            {
+                vars[key] = value;
+            }
+        }
+
+        var payload = JsonSerializer.SerializeToUtf8Bytes(vars);
+        int ptr = alloc(payload.Length);
+        try
+        {
+            payload.CopyTo(memory.GetSpan(ptr, payload.Length));
+            setEnv(ptr, payload.Length);
+        }
+        finally
+        {
+            dealloc(ptr, payload.Length);
+        }
     }
 
     private static (Engine engine, byte[] wasmBytes) LoadEngine()

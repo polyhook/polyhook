@@ -1,4 +1,43 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
+
 use crate::types::CallerKind;
+
+thread_local! {
+    /// Host environment supplied by a caller that cannot expose the real
+    /// process environment to this code. `wasm32-unknown-unknown` has no
+    /// environment at all — `std::env::var` there always returns
+    /// `Err(NotPresent)` — so the WASM-backed SDKs push the host env in via
+    /// `wasm::set_env` and this overlay is consulted first.
+    static ENV_OVERLAY: RefCell<Option<HashMap<String, String>>> = const { RefCell::new(None) };
+}
+
+/// Replace the environment overlay consulted by [`env_var`].
+///
+/// Passing `None` clears it, restoring plain `std::env::var` lookups.
+pub fn set_env_overlay(vars: Option<HashMap<String, String>>) {
+    ENV_OVERLAY.with(|o| {
+        *o.borrow_mut() = vars;
+    });
+}
+
+/// Read an environment variable, preferring the overlay set by
+/// [`set_env_overlay`] and falling back to the real process environment.
+///
+/// An overlay that is present but lacks `name` does not fall through: a host
+/// that pushed its environment in has already told us everything it has, so
+/// falling back would only ever read the (empty) WASM environment.
+pub fn env_var(name: &str) -> Option<String> {
+    let overlaid = ENV_OVERLAY.with(|o| {
+        o.borrow()
+            .as_ref()
+            .map(|vars| vars.get(name).map(String::to_owned))
+    });
+    match overlaid {
+        Some(hit) => hit,
+        None => std::env::var(name).ok(),
+    }
+}
 
 /// Detect which agent is calling the hook.
 ///
@@ -9,7 +48,7 @@ use crate::types::CallerKind;
 /// 4. `Unknown`
 pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
     // 1. Explicit override via env var
-    if let Ok(val) = std::env::var("POLYHOOK_CALLER") {
+    if let Some(val) = env_var("POLYHOOK_CALLER") {
         match val.to_lowercase().as_str() {
             "claude-code" | "claudecode" => return CallerKind::ClaudeCode,
             "cursor" => return CallerKind::Cursor,
@@ -25,22 +64,22 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
     }
 
     // 2. Agent-specific env vars
-    if std::env::var("CLAUDE_CODE_VERSION").is_ok() {
+    if env_var("CLAUDE_CODE_VERSION").is_some() {
         return CallerKind::ClaudeCode;
     }
-    if std::env::var("CURSOR_SESSION_ID").is_ok() {
+    if env_var("CURSOR_SESSION_ID").is_some() {
         return CallerKind::Cursor;
     }
-    if std::env::var("WINDSURF_SESSION_ID").is_ok() {
+    if env_var("WINDSURF_SESSION_ID").is_some() {
         return CallerKind::Windsurf;
     }
-    if std::env::var("CLINE_SESSION_ID").is_ok() {
+    if env_var("CLINE_SESSION_ID").is_some() {
         return CallerKind::Cline;
     }
-    if std::env::var("AMP_SESSION_ID").is_ok() {
+    if env_var("AMP_SESSION_ID").is_some() {
         return CallerKind::Amp;
     }
-    if std::env::var("GEMINI_PROJECT_DIR").is_ok() {
+    if env_var("GEMINI_PROJECT_DIR").is_some() {
         return CallerKind::GeminiCli;
     }
 
@@ -66,7 +105,7 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             // sets it too, as an alias, but also sets GEMINI_PROJECT_DIR,
             // which step 2 already matched. Codex payloads carry `turn_id`.
             "SessionStart" | "SessionEnd" => {
-                if std::env::var("CLAUDE_PROJECT_DIR").is_err() {
+                if env_var("CLAUDE_PROJECT_DIR").is_none() {
                     return CallerKind::GeminiCli;
                 }
                 if !has("turn_id") {

@@ -15,6 +15,7 @@ Typical usage::
 from __future__ import annotations
 
 import json
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -98,6 +99,7 @@ def _init_wasm() -> None:
     module = Module.from_file(_store.engine, str(wasm_path))
     _instance = Instance(_store, module, [])
     _memory = _instance.exports(_store)["memory"]
+    _push_env()
 
 
 # ---------------------------------------------------------------------------
@@ -126,6 +128,25 @@ def _write_to_wasm(data: bytes) -> tuple[int, int]:
     ptr = _alloc(len(data))
     _memory.write(_store, data, ptr)
     return ptr, len(data)
+
+
+def _push_env() -> None:
+    """Hand the host environment to the WASM module's detector.
+
+    The module targets ``wasm32-unknown-unknown``, which has no environment of
+    its own, so without this every env-var caller heuristic — including the
+    documented ``POLYHOOK_CALLER`` override — is silently ignored.
+    """
+    set_env = _instance.exports(_store).get("set_env")
+    if set_env is None:
+        return
+
+    payload = json.dumps(dict(os.environ)).encode()
+    ptr, length = _write_to_wasm(payload)
+    try:
+        set_env(_store, ptr, length)
+    finally:
+        _dealloc(ptr, length)
 
 
 def _read_from_wasm(ptr: int) -> bytes:

@@ -48,6 +48,11 @@ export interface WasmExports {
   dealloc(ptr: number, len: number): void;
   parse(ptr: number, len: number): number;
   serialize(ptr: number, len: number): number;
+  /**
+   * Hands the host environment to the detector. Optional so that test doubles
+   * and any older WASM build without the export still work.
+   */
+  set_env?(ptr: number, len: number): void;
 }
 
 let _wasm: WasmExports | null = null;
@@ -76,7 +81,34 @@ async function getWasm(): Promise<WasmExports> {
   };
   const { instance } = await wa.instantiate(wasmBytes);
   _wasm = instance.exports as WasmExports;
+  pushEnv(_wasm);
   return _wasm;
+}
+
+/**
+ * Give the WASM module the host environment.
+ *
+ * The module is built for `wasm32-unknown-unknown`, which has no environment
+ * of its own, so without this every env-var caller heuristic — including the
+ * documented `POLYHOOK_CALLER` override — is silently ignored.
+ */
+function pushEnv(wasm: WasmExports): void {
+  if (typeof wasm.set_env !== "function") return;
+
+  // Only string-valued entries; process.env values can be undefined.
+  const vars: Record<string, string> = {};
+  for (const [name, value] of Object.entries(process.env)) {
+    if (typeof value === "string") vars[name] = value;
+  }
+
+  const bytes = new TextEncoder().encode(JSON.stringify(vars));
+  const ptr = wasm.alloc(bytes.length);
+  try {
+    writeBytes(wasm, ptr, bytes);
+    wasm.set_env(ptr, bytes.length);
+  } finally {
+    wasm.dealloc(ptr, bytes.length);
+  }
 }
 
 // ---------------------------------------------------------------------------

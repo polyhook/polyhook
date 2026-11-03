@@ -317,3 +317,86 @@ fn length_prefix_alloc_encodes_correct_length() {
         dealloc(ptr, 4 + payload_len);
     }
 }
+
+// ---------------------------------------------------------------------------
+// set_env
+// ---------------------------------------------------------------------------
+
+// Push a JSON env map across the ABI the way an SDK shim does, then clear it.
+unsafe fn with_set_env<R>(json: &str, f: impl FnOnce() -> R) -> R {
+    let bytes = json.as_bytes();
+    let ptr = alloc(bytes.len());
+    std::ptr::copy_nonoverlapping(bytes.as_ptr(), ptr, bytes.len());
+    super::set_env(ptr, bytes.len());
+    dealloc(ptr, bytes.len());
+
+    let out = f();
+
+    super::set_env(std::ptr::null(), 0);
+    out
+}
+
+#[test]
+fn set_env_makes_polyhook_caller_reach_detection() {
+    unsafe {
+        let payload =
+            br#"{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls"}}"#;
+        let in_ptr = alloc(payload.len());
+        std::ptr::copy_nonoverlapping(payload.as_ptr(), in_ptr, payload.len());
+
+        // Without an overlay the shape heuristic says claude-code.
+        let out = parse(in_ptr, payload.len());
+        let (body, total) = read_length_prefixed(out);
+        let ev: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(ev["caller"], "claude-code");
+        dealloc(out, total);
+
+        // POLYHOOK_CALLER pushed in via set_env must win.
+        with_set_env(r#"{"POLYHOOK_CALLER":"codex"}"#, || {
+            let out = super::parse(in_ptr, payload.len());
+            let (body, total) = read_length_prefixed(out);
+            let ev: serde_json::Value = serde_json::from_slice(&body).unwrap();
+            assert_eq!(ev["caller"], "codex");
+            dealloc(out, total);
+        });
+
+        dealloc(in_ptr, payload.len());
+    }
+}
+
+#[test]
+fn set_env_ignores_non_string_values_and_clears_on_empty() {
+    with_clean_env(|| unsafe {
+        // Non-string values are skipped rather than failing the whole map.
+        with_set_env(
+            r#"{"POLYHOOK_CALLER":"amp","NUMERIC":1,"NESTED":{"a":1}}"#,
+            || {
+                assert_eq!(
+                    crate::detect::env_var("POLYHOOK_CALLER").as_deref(),
+                    Some("amp")
+                );
+                assert_eq!(crate::detect::env_var("NUMERIC"), None);
+            },
+        );
+
+        // len == 0 clears the overlay.
+        super::set_env(std::ptr::null(), 0);
+        assert_eq!(crate::detect::env_var("NUMERIC"), None);
+    });
+}
+
+#[test]
+fn set_env_with_unparsable_payload_clears_the_overlay() {
+    with_clean_env(|| unsafe {
+        with_set_env(r#"{"POLYHOOK_CALLER":"amp"}"#, || {
+            assert_eq!(
+                crate::detect::env_var("POLYHOOK_CALLER").as_deref(),
+                Some("amp")
+            );
+            // Garbage must not leave a stale overlay in place.
+            with_set_env("not json at all", || {
+                assert_eq!(crate::detect::env_var("POLYHOOK_CALLER"), None);
+            });
+        });
+    });
+}
