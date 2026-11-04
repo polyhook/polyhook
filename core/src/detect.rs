@@ -20,6 +20,7 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             "hermes" | "hermes-agent" | "hermesagent" => return CallerKind::Hermes,
             "pi" => return CallerKind::Pi,
             "codex" => return CallerKind::Codex,
+            "dsh" | "deepseek-harness" => return CallerKind::Dsh,
             _ => {}
         }
     }

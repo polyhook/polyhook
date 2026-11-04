@@ -14,7 +14,7 @@ pub(super) fn extract_input(
     caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex => {
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Dsh => {
             val.get("tool_input").cloned()
         }
         CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("args")).cloned(),
@@ -46,7 +46,7 @@ pub(super) fn extract_output(
     caller: CallerKind,
 ) -> Option<serde_json::Map<String, serde_json::Value>> {
     let raw = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex => {
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Dsh => {
             val.get("tool_output").cloned()
         }
         CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("result")).cloned(),

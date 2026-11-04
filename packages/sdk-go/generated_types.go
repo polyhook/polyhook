@@ -89,6 +89,7 @@ var enumValues_CallerKind = []interface{}{
 	"hermes",
 	"pi",
 	"codex",
+	"dsh",
 	"unknown",
 }
 
@@ -121,6 +122,7 @@ const CallerKindGeminiCli CallerKind = "gemini-cli"
 const CallerKindHermes CallerKind = "hermes"
 const CallerKindPi CallerKind = "pi"
 const CallerKindCodex CallerKind = "codex"
+const CallerKindDsh CallerKind = "dsh"
 
 // Instructs the AI tool to add the given text to the model's context for this
 // turn. Meaningful for prompt:submit events; callers that cannot inject context

@@ -19,6 +19,7 @@ class CallerKind(Enum):
     hermes = "hermes"
     pi = "pi"
     codex = "codex"
+    dsh = "dsh"
     unknown = "unknown"
 
 

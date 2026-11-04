@@ -69,6 +69,14 @@ hooks_docs  = "https://developers.openai.com/codex/hooks"
 hooks_notes = "Claude Code-compatible hook payloads plus a per-turn turn_id"
 
 [[tool]]
+id          = "dsh"
+name        = "dsh (DeepSeek Harness)"
+status      = "supported"
+homepage    = "https://github.com/deepseek-ai/deepseek-harness"
+hooks_docs  = "https://github.com/deepseek-ai/deepseek-harness/tree/main/packages/experimental/hooks-claude-code"
+hooks_notes = "Claude Code / Codex hook bridges with dsh tool names; set POLYHOOK_CALLER=dsh"
+
+[[tool]]
 id          = "continue"
 name        = "Continue"
 status      = "in-progress"

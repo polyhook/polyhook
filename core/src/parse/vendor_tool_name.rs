@@ -5,7 +5,7 @@ use crate::types::CallerKind;
 
 pub(super) fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
     match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex => {
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Dsh => {
             str_field(val, "tool_name").map(str::to_owned)
         }
         CallerKind::Cursor => val

@@ -16,6 +16,7 @@ pub fn normalize_tool(vendor: &str, caller: &CallerKind) -> String {
         CallerKind::GeminiCli => normalize_gemini_cli(&lower),
         CallerKind::Hermes => normalize_hermes(&lower),
         CallerKind::Pi | CallerKind::Codex => normalize_claude_code(&lower),
+        CallerKind::Dsh => normalize_dsh(&lower),
         CallerKind::Unknown => None,
     };
 
@@ -37,6 +38,23 @@ fn normalize_claude_code(lower: &str) -> Option<&'static str> {
         "webfetch" => Some("web_fetch"),
         "task" => Some("spawn_agent"),
         "mcp__ide__getdiagnostics" => Some("diagnostics"),
+        _ => None,
+    }
+}
+
+/// dsh (DeepSeek Harness) runs Claude Code / Codex command hooks through its hook bridges,
+/// which pass dsh's own tool names (`bash`, `read`, `subagent`, ...) in `tool_name`.
+fn normalize_dsh(lower: &str) -> Option<&'static str> {
+    match lower {
+        "bash" | "pwsh" => Some("bash"),
+        "read" => Some("read_file"),
+        "write" => Some("write_file"),
+        "edit" | "str_replace_editor" | "apply_patch" => Some("edit_file"),
+        "grep" => Some("grep"),
+        "glob" => Some("glob"),
+        "web_search" => Some("web_search"),
+        "web_fetch" => Some("web_fetch"),
+        "subagent" => Some("spawn_agent"),
         _ => None,
     }
 }

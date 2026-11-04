@@ -21,6 +21,7 @@ export type CallerKind =
   | "hermes"
   | "pi"
   | "codex"
+  | "dsh"
   | "unknown";
 /**
  * The response a hook handler returns to polyhook.wasm, which translates it into the format expected by the detected caller. Discriminated on the 'action' field.
