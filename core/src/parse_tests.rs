@@ -489,3 +489,24 @@ fn claude_code_user_prompt_submit_without_tool_fields() {
     assert_eq!(evt.caller, CallerKind::ClaudeCode);
     assert_eq!(evt.event.to_string(), "prompt:submit");
 }
+
+#[test]
+fn dsh_pre_tool_via_claude_code_bridge() {
+    // dsh-hooks-claude-code payload: Claude Code shape with dsh's own tool names.
+    let raw = json!({
+        "session_id": "s1", "transcript_path": "", "cwd": "/w",
+        "hook_event_name": "PreToolUse", "tool_name": "subagent",
+        "tool_input": {"prompt": "x"}, "tool_use_id": "c1"
+    })
+    .to_string();
+    let evt = with_clean_env(|| {
+        temp_env::with_var("POLYHOOK_CALLER", Some("dsh"), || {
+            super::parse_event(raw.as_bytes())
+        })
+    })
+    .expect("parse failed");
+    assert_eq!(evt.caller, CallerKind::Dsh);
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert_eq!(evt.tool.as_deref(), Some("spawn_agent"));
+    assert_eq!(evt.input.expect("input")["prompt"], json!("x"));
+}

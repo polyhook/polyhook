@@ -5,7 +5,7 @@ use crate::types::CallerKind;
 
 pub(super) fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
     let candidates: &[&str] = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex => &[
+        CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Dsh => &[
             "hook_event_name",
             "event",
             "hookEvent",

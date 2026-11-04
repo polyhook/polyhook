@@ -25,7 +25,7 @@ pub(super) fn extract_reply(
         // Older Claude Code builds send no `last_assistant_message`; read it
         // from the transcript. On wasm32-unknown-unknown std::fs always fails,
         // so WASM SDKs get None here.
-        (None, CallerKind::ClaudeCode | CallerKind::Codex | CallerKind::Pi) => {
+        (None, CallerKind::ClaudeCode | CallerKind::Codex | CallerKind::Pi | CallerKind::Dsh) => {
             last_assistant_text(&std::fs::read_to_string(transcript_path?).ok()?)
         }
         _ => None,

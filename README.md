@@ -70,7 +70,7 @@ interface HookEvent {
   output?:   Record<string, unknown>;       // tool output (tool:after only)
   sessionId: string;
   agentId?:  string;
-  caller:    "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "codex" | "unknown";
+  caller:    "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "codex" | "dsh" | "unknown";
 }
 ```
 
@@ -152,6 +152,7 @@ Examples: [packages/sdk-python/examples/](packages/sdk-python/examples/)
 | [Hermes Agent](https://github.com/NousResearch/hermes-agent) | ✅ Supported |
 | [Pi](https://pi.dev) | ✅ Supported |
 | [Codex](https://developers.openai.com/codex) | ✅ Supported |
+| [dsh (DeepSeek Harness)](https://github.com/deepseek-ai/deepseek-harness) | ✅ Supported |
 | [Continue](https://continue.dev) | 🚧 In progress |
 | [Aider](https://aider.chat) | 🚧 In progress |
 | [Copilot](https://github.com/features/copilot) | 📋 Planned |
@@ -159,6 +160,8 @@ Examples: [packages/sdk-python/examples/](packages/sdk-python/examples/)
 `prompt:submit` context injection (`{ action: "context" }`) works on Claude Code, Codex, Gemini CLI (`BeforeAgent`), Hermes (`pre_llm_call`) and Cline (`UserPromptSubmit`). Cursor, Windsurf and Amp have no prompt hook that can add context, so there a context response is sent as approve.
 
 Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+
+dsh runs Claude Code and Codex command hooks through its hook bridges, so its payloads look like theirs. Set `POLYHOOK_CALLER=dsh` on the hook command; polyhook then maps dsh's own tool names (`read`, `apply_patch`, `subagent`, …) to the canonical ones.
 
 Source of truth: [tools.toml](tools.toml) — hook documentation links: [docs/tool-names.md](docs/tool-names.md)
 

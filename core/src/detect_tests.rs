@@ -158,6 +158,19 @@ fn polyhook_caller_pi_detected() {
 }
 
 #[test]
+fn env_override_dsh() {
+    // dsh's hook bridges send Claude Code / Codex payloads, so only the override names it.
+    let val = serde_json::json!({"hook_event_name": "PreToolUse", "turn_id": "t1"});
+    for name in ["dsh", "DeepSeek-Harness"] {
+        with_clean_env(|| {
+            temp_env::with_var("POLYHOOK_CALLER", Some(name), || {
+                assert_eq!(detect_caller(&val), CallerKind::Dsh, "{name}");
+            });
+        });
+    }
+}
+
+#[test]
 fn gemini_cli_before_tool_heuristic() {
     let val = serde_json::json!({
         "hook_event_name": "BeforeTool",
