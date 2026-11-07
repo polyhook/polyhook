@@ -285,6 +285,7 @@ fn hermes_pre_tool() {
     let input = evt.input.expect("input should be present");
     assert_eq!(input["command"], json!("ls -la"));
     assert!(evt.output.is_none());
+    assert_eq!(evt.cwd.as_deref(), Some("/tmp/project"));
 }
 
 #[test]
@@ -559,6 +560,24 @@ fn codex_pre_tool_carries_model_cwd_and_transcript() {
     assert_eq!(evt.cwd.as_deref(), Some("/home/user/app"));
     assert!(evt.transcript_path.is_some());
     assert!(evt.file_path.is_none());
+}
+
+#[test]
+fn codex_stop_carries_model_on_every_event() {
+    // Codex sends model on every event, not only on tool hooks.
+    let evt = parse_value(json!({
+        "session_id": "sess_cx_2",
+        "turn_id": "turn_2",
+        "transcript_path": "/home/user/.codex/sessions/2026/11/07/rollout.jsonl",
+        "cwd": "/home/user/app",
+        "hook_event_name": "Stop",
+        "model": "gpt-5.5",
+        "permission_mode": "default",
+        "stop_hook_active": false,
+    }));
+    assert_eq!(evt.caller, CallerKind::Codex);
+    assert_eq!(evt.model.as_deref(), Some("gpt-5.5"));
+    assert_eq!(evt.cwd.as_deref(), Some("/home/user/app"));
 }
 
 #[test]

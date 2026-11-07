@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Claude Code `MultiEdit` and `NotebookEdit` now normalize to `edit_file`
   instead of passing through under their vendor names. Hooks that matched
   `MultiEdit` or `NotebookEdit` by name must match `edit_file` and read
-  `filePath`.
+  `filePath`. The `input` shape differs from `Edit`: `MultiEdit` sends an
+  `edits` array and `NotebookEdit` sends `notebook_path` with no
+  `old_string` or `new_string`. Hooks that read `input.old_string` or
+  `input.new_string` must check the vendor tool name first.
 
 ### Added
 
