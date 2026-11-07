@@ -599,6 +599,16 @@ fn claude_code_notebook_edit_maps_to_edit_file_with_notebook_path() {
         evt.file_path.as_deref(),
         Some("/home/user/app/analysis.ipynb")
     );
+    // The original input passes through unchanged, so a consumer can still read
+    // the cell fields it needs. This is the compatibility path for NotebookEdit.
+    let input = evt.input.expect("input should be present");
+    assert_eq!(
+        input["notebook_path"],
+        json!("/home/user/app/analysis.ipynb")
+    );
+    assert_eq!(input["cell_id"], json!("cell-2"));
+    assert_eq!(input["new_source"], json!("print(1)"));
+    assert_eq!(input["edit_mode"], json!("replace"));
 }
 
 #[test]
