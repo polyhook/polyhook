@@ -1,7 +1,9 @@
 mod assistant_reply;
 mod event_kind_inference;
+mod file_path;
 mod json_string_field;
 mod session_and_agent_ids;
+mod session_context;
 mod tool_input_and_output;
 mod user_prompt;
 mod vendor_event_name;
@@ -13,7 +15,9 @@ use crate::tools::normalize_tool;
 use crate::types::{HookEvent, HookEventEvent};
 use assistant_reply::{extract_reply, extract_transcript_path};
 use event_kind_inference::infer_event;
+use file_path::extract_file_path;
 use session_and_agent_ids::{extract_agent_id, extract_session_id};
+use session_context::{extract_cwd, extract_model};
 use tool_input_and_output::{extract_input, extract_output};
 use user_prompt::extract_prompt;
 use vendor_event_name::extract_event_field;
@@ -67,6 +71,11 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
     let session_id = extract_session_id(&val);
     let agent_id = extract_agent_id(&val);
 
+    // --- session context / file path ---
+    let file_path = extract_file_path(tool.as_deref(), input.as_ref());
+    let cwd = extract_cwd(&val);
+    let model = extract_model(&val);
+
     Ok(HookEvent {
         event,
         tool,
@@ -78,6 +87,9 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
         prompt,
         reply,
         transcript_path,
+        cwd,
+        model,
+        file_path,
     })
 }
 

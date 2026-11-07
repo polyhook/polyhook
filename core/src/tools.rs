@@ -30,7 +30,7 @@ fn normalize_claude_code(lower: &str) -> Option<&'static str> {
         "bash" => Some("bash"),
         "read" => Some("read_file"),
         "write" => Some("write_file"),
-        "edit" => Some("edit_file"),
+        "edit" | "multiedit" | "notebookedit" => Some("edit_file"),
         "ls" => Some("list_dir"),
         "grep" => Some("grep"),
         "glob" => Some("glob"),

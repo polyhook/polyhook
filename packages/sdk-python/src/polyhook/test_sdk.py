@@ -276,6 +276,32 @@ class TestRead:
         assert event.input is None
         assert event.agent_id is None
 
+    def test_cwd_model_and_file_path_mapped(self):
+        from polyhook import read
+
+        _patch_wasm(
+            self._event_dict(
+                cwd="/work/app",
+                model="claude-haiku-5-5",
+                filePath="src/main.rs",
+            )
+        )
+        with patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"{}"))):
+            event = read()
+        assert event.cwd == "/work/app"
+        assert event.model == "claude-haiku-5-5"
+        assert event.file_path == "src/main.rs"
+
+    def test_new_fields_default_to_none(self):
+        from polyhook import read
+
+        _patch_wasm(self._event_dict())
+        with patch("sys.stdin", io.TextIOWrapper(io.BytesIO(b"{}"))):
+            event = read()
+        assert event.cwd is None
+        assert event.model is None
+        assert event.file_path is None
+
     def test_parse_error_raises_value_error(self):
         from polyhook import read
 

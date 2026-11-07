@@ -70,6 +70,18 @@ export interface HookEvent {
    */
   transcriptPath?: string | null;
   /**
+   * Working directory of the agent session, from the caller's top-level `cwd` (Claude Code, Codex, Gemini CLI and Hermes); null when the caller sends none.
+   */
+  cwd?: string | null;
+  /**
+   * Model slug of the agent, from the caller's top-level `model` (Codex sends it on every event; Claude Code only on session:start); null when the caller sends none.
+   */
+  model?: string | null;
+  /**
+   * Path of the file that a write_file or edit_file tool changes, read from the first of `file_path`, `path`, `notebook_path` and `target_file` in the tool input. Set whenever the tool is write_file or edit_file (Claude Code Write, Edit, MultiEdit and NotebookEdit among them); null otherwise. The path is passed through as the caller sent it, so it can be relative.
+   */
+  filePath?: string | null;
+  /**
    * Normalized tool name (e.g. 'bash', 'write_file', 'read_file'). Present for tool:before and tool:after events; null for all other event kinds.
    */
   tool?: string | null;

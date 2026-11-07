@@ -1,0 +1,1 @@
+{"hook_event_name":"BeforeTool","tool_name":"write_file","tool_input":{"file_path":"/home/user/app/notes.md","content":"hi"},"session_id":"sess_gc_002","transcript_path":"/tmp/gc_transcript.json","cwd":"/home/user/app","timestamp":"2026-01-28T10:02:00Z"}

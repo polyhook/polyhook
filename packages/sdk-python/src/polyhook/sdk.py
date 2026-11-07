@@ -36,6 +36,9 @@ class HookEvent:
     caller: str
     reply: Optional[str] = None
     transcript_path: Optional[str] = None
+    cwd: Optional[str] = None
+    model: Optional[str] = None
+    file_path: Optional[str] = None
 
 
 # Re-export for backwards compatibility
@@ -196,6 +199,9 @@ def read() -> HookEvent:
         caller=caller,
         reply=data.get("reply"),
         transcript_path=data.get("transcriptPath"),
+        cwd=data.get("cwd"),
+        model=data.get("model"),
+        file_path=data.get("filePath"),
     )
 
 

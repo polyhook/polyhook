@@ -55,6 +55,7 @@ Source hook docs: [Claude Code](https://code.claude.com/docs/en/hooks) · [Curso
 ## Notes
 
 - A `—` means the tool has no equivalent for that operation.
+- Claude Code `MultiEdit` and `NotebookEdit` map to `edit_file`. Their file path is in `filePath`.
 - Vendor names are matched case-insensitively during normalization.
 - If a tool name is not in this table, polyhook passes it through as-is and sets `tool` to the raw vendor name.
 - To propose a new mapping, open a PR editing `core/src/tools.rs` and this file.

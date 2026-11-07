@@ -15,9 +15,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Gemini CLI `AfterAgent` (once per turn) moves from `agent:stop` to
   `turn:stop`. Hooks that listened on `session:stop` or `agent:stop` for
   per-turn stops must listen on `turn:stop` ([#82]).
+- Claude Code `MultiEdit` and `NotebookEdit` now normalize to `edit_file`
+  instead of passing through under their vendor names. Hooks that matched
+  `MultiEdit` or `NotebookEdit` by name must match `edit_file` and read
+  `filePath`. The `input` shape differs from `Edit`: `MultiEdit` sends an
+  `edits` array and `NotebookEdit` sends `notebook_path` with no
+  `old_string` or `new_string`. Hooks that read `input.old_string` or
+  `input.new_string` must check the vendor tool name first.
 
 ### Added
 
+- `cwd` field: the agent's working directory, from the top-level `cwd` that
+  Claude Code, Codex, Gemini CLI and Hermes send. Null when absent.
+- `model` field: the agent's model slug, from the top-level `model` that
+  Codex sends on every event and Claude Code sends on `session:start`. Null
+  when absent.
+- `filePath` field: the file that a `write_file` or `edit_file` tool changes.
+  polyhook reads it from the first of `file_path`, `path`, `notebook_path` and
+  `target_file` in the tool input, so callers need not know each agent's key.
+  Null for other tools.
+- Go and .NET SDK types carry `cwd`, `model` and `filePath`, added by hand.
+  The Go generated types are not regenerated: the pinned generator output
+  drifts by about 320 lines on the unchanged schema. Tracked in #125.
 - `turn:stop` event with a `reply` field: the agent's final reply text.
   Filled from Claude Code/Codex/Pi `last_assistant_message`, Gemini CLI
   `prompt_response` and Hermes `assistant_response`. When a Claude

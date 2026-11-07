@@ -1,0 +1,1 @@
+{"session_id":"sess_cx_1","turn_id":"turn_1","transcript_path":"/home/user/.codex/sessions/2026/11/07/rollout.jsonl","cwd":"/home/user/app","hook_event_name":"PreToolUse","model":"gpt-5.5","permission_mode":"default","tool_name":"Bash","tool_input":{"command":"ls -la"},"tool_use_id":"call_1"}

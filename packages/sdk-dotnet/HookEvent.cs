@@ -137,4 +137,23 @@ public sealed record HookEvent
     /// </summary>
     [JsonPropertyName("caller")]
     public required CallerKind Caller { get; init; }
+
+    /// <summary>
+    /// Working directory of the agent session; null when the caller sends none.
+    /// </summary>
+    [JsonPropertyName("cwd")]
+    public string? Cwd { get; init; }
+
+    /// <summary>
+    /// Model slug of the agent (Codex sends it on every event; Claude Code only
+    /// on session:start); null when the caller sends none.
+    /// </summary>
+    [JsonPropertyName("model")]
+    public string? Model { get; init; }
+
+    /// <summary>
+    /// The file that a write_file or edit_file tool changes; null for other tools.
+    /// </summary>
+    [JsonPropertyName("filePath")]
+    public string? FilePath { get; init; }
 }

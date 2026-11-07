@@ -285,6 +285,7 @@ fn hermes_pre_tool() {
     let input = evt.input.expect("input should be present");
     assert_eq!(input["command"], json!("ls -la"));
     assert!(evt.output.is_none());
+    assert_eq!(evt.cwd.as_deref(), Some("/tmp/project"));
 }
 
 #[test]
@@ -509,4 +510,197 @@ fn dsh_pre_tool_via_claude_code_bridge() {
     assert_eq!(evt.event.to_string(), "tool:before");
     assert_eq!(evt.tool.as_deref(), Some("spawn_agent"));
     assert_eq!(evt.input.expect("input")["prompt"], json!("x"));
+}
+
+// ---------------------------------------------------------------------------
+// Session context (cwd, model) and the normalized file path.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn claude_code_session_start_carries_model_and_cwd() {
+    // Claude Code sets CLAUDE_PROJECT_DIR on every hook. Gemini CLI sets it
+    // too, so SessionStart needs it to be detected as Claude Code.
+    let raw = fixture("claude-code-session-start.json");
+    let evt = temp_env::with_vars(
+        [
+            ("CLAUDE_PROJECT_DIR", Some("/home/user/app")),
+            ("POLYHOOK_CALLER", None),
+            ("CLAUDE_CODE_VERSION", None),
+            ("GEMINI_PROJECT_DIR", None),
+        ],
+        || super::parse_event(&raw),
+    )
+    .expect("parse failed");
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "session:start");
+    assert_eq!(evt.model.as_deref(), Some("claude-haiku-5-5"));
+    assert_eq!(evt.cwd.as_deref(), Some("/home/user/app"));
+    assert_eq!(
+        evt.transcript_path.as_deref(),
+        Some("/home/user/.claude/projects/app/sess_cc_start.jsonl")
+    );
+    assert!(evt.file_path.is_none());
+}
+
+#[test]
+fn claude_code_stop_carries_cwd_without_model() {
+    let evt = parse_event(&fixture("claude-code-stop.json")).expect("parse failed");
+    assert_eq!(evt.event.to_string(), "turn:stop");
+    assert_eq!(evt.cwd.as_deref(), Some("/home/user"));
+    assert!(evt.model.is_none());
+}
+
+#[test]
+fn codex_pre_tool_carries_model_cwd_and_transcript() {
+    let evt = parse_event(&fixture("codex-pre-tool.json")).expect("parse failed");
+    assert_eq!(evt.caller, CallerKind::Codex);
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert_eq!(evt.tool.as_deref(), Some("bash"));
+    assert_eq!(evt.model.as_deref(), Some("gpt-5.5"));
+    assert_eq!(evt.cwd.as_deref(), Some("/home/user/app"));
+    assert!(evt.transcript_path.is_some());
+    assert!(evt.file_path.is_none());
+}
+
+#[test]
+fn codex_stop_carries_model_on_every_event() {
+    // Codex sends model on every event, not only on tool hooks.
+    let evt = parse_value(json!({
+        "session_id": "sess_cx_2",
+        "turn_id": "turn_2",
+        "transcript_path": "/home/user/.codex/sessions/2026/11/07/rollout.jsonl",
+        "cwd": "/home/user/app",
+        "hook_event_name": "Stop",
+        "model": "gpt-5.5",
+        "permission_mode": "default",
+        "stop_hook_active": false,
+    }));
+    assert_eq!(evt.caller, CallerKind::Codex);
+    assert_eq!(evt.model.as_deref(), Some("gpt-5.5"));
+    assert_eq!(evt.cwd.as_deref(), Some("/home/user/app"));
+}
+
+#[test]
+fn claude_code_multiedit_maps_to_edit_file_with_file_path() {
+    let evt = parse_event(&fixture("claude-code-multiedit-pre-tool.json")).expect("parse failed");
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert_eq!(evt.tool.as_deref(), Some("edit_file"));
+    assert_eq!(evt.file_path.as_deref(), Some("/home/user/app/src/lib.rs"));
+    assert_eq!(evt.cwd.as_deref(), Some("/home/user/app"));
+}
+
+#[test]
+fn claude_code_notebook_edit_maps_to_edit_file_with_notebook_path() {
+    let evt =
+        parse_event(&fixture("claude-code-notebook-edit-pre-tool.json")).expect("parse failed");
+    assert_eq!(evt.tool.as_deref(), Some("edit_file"));
+    assert_eq!(
+        evt.file_path.as_deref(),
+        Some("/home/user/app/analysis.ipynb")
+    );
+    // The original input passes through unchanged, so a consumer can still read
+    // the cell fields it needs. This is the compatibility path for NotebookEdit.
+    let input = evt.input.expect("input should be present");
+    assert_eq!(
+        input["notebook_path"],
+        json!("/home/user/app/analysis.ipynb")
+    );
+    assert_eq!(input["cell_id"], json!("cell-2"));
+    assert_eq!(input["new_source"], json!("print(1)"));
+    assert_eq!(input["edit_mode"], json!("replace"));
+}
+
+#[test]
+fn claude_code_write_and_edit_set_file_path() {
+    let evt = parse_event(&fixture("claude-code-post-tool.json")).expect("parse failed");
+    // Read is not a write tool, so no file path is set.
+    assert_eq!(evt.tool.as_deref(), Some("read_file"));
+    assert!(evt.file_path.is_none());
+
+    let write = parse_value(json!({
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Write",
+        "tool_input": { "file_path": "/p/new.ts", "content": "x" },
+    }));
+    assert_eq!(write.tool.as_deref(), Some("write_file"));
+    assert_eq!(write.file_path.as_deref(), Some("/p/new.ts"));
+}
+
+#[test]
+fn gemini_cli_write_file_sets_file_path_and_cwd() {
+    let evt = parse_event(&fixture("gemini-cli-write-file.json")).expect("parse failed");
+    assert_eq!(evt.caller, CallerKind::GeminiCli);
+    assert_eq!(evt.tool.as_deref(), Some("write_file"));
+    assert_eq!(evt.file_path.as_deref(), Some("/home/user/app/notes.md"));
+    assert_eq!(evt.cwd.as_deref(), Some("/home/user/app"));
+    assert!(evt.model.is_none());
+}
+
+#[test]
+fn file_path_is_read_from_each_agent_key() {
+    // Each key an agent uses for the written file, one tool at a time.
+    for (key, path) in [
+        ("file_path", "/p/a.rs"),
+        ("path", "/p/b.py"),
+        ("notebook_path", "/p/c.ipynb"),
+        ("target_file", "src/d.ts"),
+    ] {
+        let evt = parse_value(json!({
+            "hook_event_name": "PreToolUse",
+            "tool_name": "Edit",
+            "tool_input": { key: path },
+        }));
+        assert_eq!(evt.file_path.as_deref(), Some(path), "{key}");
+    }
+}
+
+#[test]
+fn file_path_prefers_file_path_key_and_skips_non_strings() {
+    let evt = parse_value(json!({
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": { "path": "/p/second.rs", "file_path": "/p/first.rs" },
+    }));
+    assert_eq!(evt.file_path.as_deref(), Some("/p/first.rs"));
+
+    let evt = parse_value(json!({
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": { "file_path": 7, "path": "/p/third.rs" },
+    }));
+    assert_eq!(evt.file_path.as_deref(), Some("/p/third.rs"));
+}
+
+#[test]
+fn write_tool_without_path_key_has_no_file_path() {
+    let evt = parse_value(json!({
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Edit",
+        "tool_input": { "old_string": "a", "new_string": "b" },
+    }));
+    assert_eq!(evt.tool.as_deref(), Some("edit_file"));
+    assert!(evt.file_path.is_none());
+}
+
+#[test]
+fn bash_tool_never_sets_file_path() {
+    let evt = parse_value(json!({
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": { "command": "echo x > /p/out.txt", "path": "/p/out.txt" },
+    }));
+    assert_eq!(evt.tool.as_deref(), Some("bash"));
+    assert!(evt.file_path.is_none());
+}
+
+#[test]
+fn cursor_edit_file_reads_path_key() {
+    let evt = parse_value(json!({
+        "type": "BeforeToolCall",
+        "toolCall": { "name": "edit_file", "args": { "path": "/p/a.py" } },
+        "sessionId": "s",
+    }));
+    assert_eq!(evt.tool.as_deref(), Some("write_file"));
+    assert_eq!(evt.file_path.as_deref(), Some("/p/a.py"));
 }

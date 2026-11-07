@@ -147,6 +147,31 @@ func TestCallerKindConstants(t *testing.T) {
 // HookEvent struct JSON round-trip
 // ---------------------------------------------------------------------------
 
+func TestHookEventUnmarshalCwdModelFilePath(t *testing.T) {
+	raw := `{
+		"event":     "tool:before",
+		"tool":      "edit_file",
+		"sessionId": "sess_abc",
+		"caller":    "codex",
+		"cwd":       "/home/user/app",
+		"model":     "gpt-5.5",
+		"filePath":  "/home/user/app/src/lib.rs"
+	}`
+	var ev polyhook.HookEvent
+	if err := json.Unmarshal([]byte(raw), &ev); err != nil {
+		t.Fatal(err)
+	}
+	if ev.Cwd == nil || *ev.Cwd != "/home/user/app" {
+		t.Errorf("Cwd = %v; want /home/user/app", ev.Cwd)
+	}
+	if ev.Model == nil || *ev.Model != "gpt-5.5" {
+		t.Errorf("Model = %v; want gpt-5.5", ev.Model)
+	}
+	if ev.FilePath == nil || *ev.FilePath != "/home/user/app/src/lib.rs" {
+		t.Errorf("FilePath = %v; want /home/user/app/src/lib.rs", ev.FilePath)
+	}
+}
+
 func TestHookEventUnmarshal(t *testing.T) {
 	tool := "bash"
 	agentID := "agent_xyz"

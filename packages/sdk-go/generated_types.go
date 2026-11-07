@@ -237,6 +237,16 @@ type HookEvent struct {
 	// Path to the session transcript file, when the caller sends one (Claude Code,
 	// Codex, Pi and Gemini CLI `transcript_path`); null otherwise.
 	TranscriptPath *string `json:"transcriptPath,omitempty" yaml:"transcriptPath,omitempty" mapstructure:"transcriptPath,omitempty"`
+
+	// Working directory of the agent session; null when the caller sends none.
+	Cwd *string `json:"cwd,omitempty" yaml:"cwd,omitempty" mapstructure:"cwd,omitempty"`
+
+	// The file that a write_file or edit_file tool changes; null for other tools.
+	FilePath *string `json:"filePath,omitempty" yaml:"filePath,omitempty" mapstructure:"filePath,omitempty"`
+
+	// Model slug of the agent (Codex sends it on every event; Claude Code only on
+	// session:start); null when the caller sends none.
+	Model *string `json:"model,omitempty" yaml:"model,omitempty" mapstructure:"model,omitempty"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.

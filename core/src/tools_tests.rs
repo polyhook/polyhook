@@ -47,6 +47,18 @@ fn claude_grep() {
     assert_eq!(normalize_tool("grep", &CallerKind::ClaudeCode), "grep");
 }
 #[test]
+fn claude_multiedit_and_notebookedit_are_edits() {
+    assert_eq!(
+        normalize_tool("MultiEdit", &CallerKind::ClaudeCode),
+        "edit_file"
+    );
+    assert_eq!(
+        normalize_tool("NotebookEdit", &CallerKind::ClaudeCode),
+        "edit_file"
+    );
+    assert_eq!(normalize_tool("MultiEdit", &CallerKind::Pi), "edit_file");
+}
+#[test]
 fn claude_glob() {
     assert_eq!(normalize_tool("glob", &CallerKind::ClaudeCode), "glob");
 }
