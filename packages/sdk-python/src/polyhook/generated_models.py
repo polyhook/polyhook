@@ -42,6 +42,9 @@ class HookEvent:
     prompt: str | None = None
     reply: str | None = None
     transcriptPath: str | None = None
+    cwd: str | None = None
+    model: str | None = None
+    filePath: str | None = None
     tool: str | None = None
     input: dict[str, Any] | None = None
     output: dict[str, Any] | None = None

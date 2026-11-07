@@ -67,6 +67,9 @@ interface HookEvent {
   prompt?:   string;                        // user prompt (prompt:submit only)
   reply?:    string;                        // agent's final reply text (turn:stop only)
   transcriptPath?: string;                  // session transcript file, when the caller sends one
+  cwd?:      string;                        // agent working directory, when the caller sends one
+  model?:    string;                        // model slug, when the caller sends one (Codex; Claude Code on session:start)
+  filePath?: string;                        // file that a write_file / edit_file tool changes (any path key the agent uses)
   output?:   Record<string, unknown>;       // tool output (tool:after only)
   sessionId: string;
   agentId?:  string;

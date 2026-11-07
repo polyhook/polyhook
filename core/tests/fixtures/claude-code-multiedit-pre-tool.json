@@ -1,0 +1,1 @@
+{"session_id":"sess_cc_me","transcript_path":"/home/user/.claude/projects/app/sess_cc_me.jsonl","cwd":"/home/user/app","permission_mode":"default","hook_event_name":"PreToolUse","tool_name":"MultiEdit","tool_input":{"file_path":"/home/user/app/src/lib.rs","edits":[{"old_string":"fn a()","new_string":"fn b()"},{"old_string":"b()","new_string":"c()"}]},"tool_use_id":"toolu_me1"}

@@ -228,6 +228,39 @@ describe("read() — Claude Code payloads", () => {
   });
 });
 
+describe("read() — session context and file path", () => {
+  afterEach(() => {
+    _setWasmInstance(null);
+  });
+
+  test("passes cwd, model, transcriptPath and filePath through", async () => {
+    const wasm = buildMockWasm((json) => JSON.parse(json) as HookEvent);
+    _setWasmInstance(wasm);
+    mockStdin(
+      JSON.stringify({
+        event: "tool:before",
+        caller: "claude-code" as CallerKind,
+        sessionId: "session-3",
+        tool: "edit_file",
+        input: { file_path: "/home/user/app/src/lib.rs" },
+        cwd: "/home/user/app",
+        model: "claude-haiku-5-5",
+        transcriptPath: "/home/user/.claude/projects/app/session-3.jsonl",
+        filePath: "/home/user/app/src/lib.rs",
+      }),
+    );
+
+    const event = await read();
+
+    expect(event.cwd).toBe("/home/user/app");
+    expect(event.model).toBe("claude-haiku-5-5");
+    expect(event.transcriptPath).toBe(
+      "/home/user/.claude/projects/app/session-3.jsonl",
+    );
+    expect(event.filePath).toBe("/home/user/app/src/lib.rs");
+  });
+});
+
 describe("read() — Cursor payloads", () => {
   afterEach(() => {
     _setWasmInstance(null);
