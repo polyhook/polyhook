@@ -34,9 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   polyhook reads it from the first of `file_path`, `path`, `notebook_path` and
   `target_file` in the tool input, so callers need not know each agent's key.
   Null for other tools.
-- Go and .NET SDK types do not yet carry `cwd`, `model` or `filePath`.
-  The Go wasm emits them, but the generated Go types and the .NET
-  `HookEvent.cs` are not regenerated. Tracked in #125.
+- Go and .NET SDK types carry `cwd`, `model` and `filePath`, added by hand.
+  The Go generated types are not regenerated: the pinned generator output
+  drifts by about 320 lines on the unchanged schema. Tracked in #125.
 - `turn:stop` event with a `reply` field: the agent's final reply text.
   Filled from Claude Code/Codex/Pi `last_assistant_message`, Gemini CLI
   `prompt_response` and Hermes `assistant_response`. When a Claude
