@@ -183,6 +183,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). To add tool support, add detection heuri
 
 ---
 
+## Related projects
+
+- [moadim](https://moadim.io/) — loop engineering: build, schedule & run agent loops.
+
+---
+
 ## License
 
 MIT
