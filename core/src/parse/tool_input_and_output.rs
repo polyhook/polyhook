@@ -1,5 +1,6 @@
 //! Tool input and output extraction.
 
+use super::windsurf;
 use crate::types::CallerKind;
 
 pub(super) fn into_map(v: serde_json::Value) -> Option<serde_json::Map<String, serde_json::Value>> {
@@ -18,7 +19,10 @@ pub(super) fn extract_input(
             val.get("tool_input").cloned()
         }
         CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("args")).cloned(),
-        CallerKind::Windsurf => val.get("parameters").cloned(),
+        CallerKind::Windsurf => val
+            .get("parameters")
+            .cloned()
+            .or_else(|| windsurf::action_input(val)),
         CallerKind::Cline => val
             .get("args")
             .cloned()
