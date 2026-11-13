@@ -82,7 +82,7 @@ jobs:
     needs: build-wasm
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: packages/sdk-go/go.mod
           cache-dependency-path: packages/sdk-go/go.sum
