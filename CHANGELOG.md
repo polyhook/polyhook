@@ -39,6 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer emits Gemini's `{"decision":"allow"}`, which Claude Code rejects.
   Codex payloads (`turn_id`) still win over the shared event names ([#63]).
 
+### Security
+
+- Removed the unmaintained `wee_alloc` crate (GitHub security advisory
+  "wee_alloc is Unmaintained"). The WASM build now uses the Rust standard allocator. `polyhook.wasm` grows
+  by about 5 KB.
+
 ## [0.2.0] - 2026-09-26
 
 ### Added

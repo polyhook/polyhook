@@ -801,7 +801,7 @@ func TestWasmWrite_MemoryOverflow(t *testing.T) {
 	}()
 
 	// 70 000 bytes > 1 WASM page (65 536 bytes); alloc should succeed
-	// (wee_alloc grows memory) but write into a buffer that exceeds the
+	// (the allocator grows memory) but write into a buffer that exceeds the
 	// original memory limit exercises the wasmWrite error branch.
 	//
 	// In practice wazero allows unlimited memory growth, so this test at
