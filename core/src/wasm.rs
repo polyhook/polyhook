@@ -17,12 +17,6 @@ use crate::parse::parse_event;
 use crate::response::serialize_response_with_event;
 use crate::types::{CallerKind, HookEventEvent};
 
-// Use wee_alloc as the global allocator when targeting WASM to minimise
-// binary size.
-#[cfg(target_arch = "wasm32")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
 // Store the caller and event type detected during `parse` so that `serialize`
 // can use them without requiring callers to pass them explicitly. Mirrors the
 // LAST_CALLER/LAST_EVENT pair in lib.rs's native `read_from`/`respond_to`
