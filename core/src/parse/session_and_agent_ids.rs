@@ -3,7 +3,8 @@
 use super::json_string_field::str_field;
 
 pub(super) fn extract_session_id(val: &serde_json::Value) -> String {
-    for key in &["session_id", "sessionId", "session"] {
+    // Windsurf has no session id; `trajectory_id` identifies the Cascade run.
+    for key in &["session_id", "sessionId", "session", "trajectory_id"] {
         if let Some(s) = str_field(val, key) {
             return s.to_owned();
         }
