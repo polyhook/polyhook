@@ -88,7 +88,7 @@ More examples: [examples/](examples/)
 
 $TOOLS_TABLE
 
-Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+Pi uses the Claude Code-compatible hook payload format; set \`POLYHOOK_CALLER=pi\` if you want it labeled explicitly.
 
 ## Documentation
 
@@ -157,7 +157,7 @@ More examples: [examples/](examples/)
 
 $TOOLS_TABLE
 
-Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+Pi uses the Claude Code-compatible hook payload format; set \`POLYHOOK_CALLER=pi\` if you want it labeled explicitly.
 
 ## Documentation
 
@@ -217,7 +217,7 @@ More examples: [examples/](examples/)
 
 $TOOLS_TABLE
 
-Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+Pi uses the Claude Code-compatible hook payload format; set \`POLYHOOK_CALLER=pi\` if you want it labeled explicitly.
 
 ## Documentation
 
@@ -266,7 +266,7 @@ More examples: [examples/](examples/)
 
 $TOOLS_TABLE
 
-Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+Pi uses the Claude Code-compatible hook payload format; set \`POLYHOOK_CALLER=pi\` if you want it labeled explicitly.
 
 ## Documentation
 
@@ -313,7 +313,7 @@ More examples: [examples/](examples/)
 
 $TOOLS_TABLE
 
-Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
+Pi uses the Claude Code-compatible hook payload format; set \`POLYHOOK_CALLER=pi\` if you want it labeled explicitly.
 
 ## Documentation
 

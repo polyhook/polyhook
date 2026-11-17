@@ -59,7 +59,7 @@ More examples: [examples/](examples/)
 | [Aider](https://aider.chat) | 🚧 In progress |
 | [Copilot](https://github.com/features/copilot) | 📋 Planned |
 
-Pi uses the Claude Code-compatible hook payload format; set  if you want it labeled explicitly.
+Pi uses the Claude Code-compatible hook payload format; set `POLYHOOK_CALLER=pi` if you want it labeled explicitly.
 
 ## Documentation
 
