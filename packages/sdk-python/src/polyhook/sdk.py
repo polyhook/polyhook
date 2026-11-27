@@ -34,6 +34,8 @@ class HookEvent:
     session_id: str
     agent_id: Optional[str]
     caller: str
+    reply: Optional[str] = None
+    transcript_path: Optional[str] = None
 
 
 # Re-export for backwards compatibility
@@ -192,6 +194,8 @@ def read() -> HookEvent:
         session_id=data["sessionId"],
         agent_id=data.get("agentId"),
         caller=caller,
+        reply=data.get("reply"),
+        transcript_path=data.get("transcriptPath"),
     )
 
 

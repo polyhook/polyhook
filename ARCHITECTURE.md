@@ -135,9 +135,12 @@ Full table: [docs/tool-names.md](docs/tool-names.md)
 | `tool:before` | `PreToolUse` | `BeforeToolCall` | `pre_tool` | `beforeToolUse` | `tool.before` |
 | `tool:after` | `PostToolUse` | `AfterToolCall` | `post_tool` | `afterToolUse` | `tool.after` |
 | `session:start` | `Startup` | `SessionStart` | `session_start` | `onStart` | `session.start` |
-| `session:stop` | `Stop` | `SessionEnd` | `session_end` | `onStop` | `session.stop` |
+| `session:stop` | `SessionEnd` | `SessionEnd` | `session_end` | `onStop` | `session.stop` |
+| `turn:stop` | `Stop` | — | — | — | — |
 | `agent:stop` | `SubagentStop` | — | — | — | `agent.stop` |
 | `notification` | `Notification` | `Notification` | `notification` | — | — |
+
+Gemini CLI `AfterAgent` and Hermes `post_llm_call` also map to `turn:stop`. Full per-caller mapping: [`core/src/events.rs`](core/src/events.rs).
 
 ---
 

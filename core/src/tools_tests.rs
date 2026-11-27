@@ -8,6 +8,31 @@ fn unknown_caller_returns_original() {
     assert_eq!(normalize_tool("Bash", &CallerKind::Unknown), "Bash");
 }
 
+#[test]
+fn dsh_tools() {
+    for (vendor, canonical) in [
+        ("bash", "bash"),
+        ("pwsh", "bash"),
+        ("read", "read_file"),
+        ("write", "write_file"),
+        ("edit", "edit_file"),
+        ("str_replace_editor", "edit_file"),
+        ("apply_patch", "edit_file"),
+        ("grep", "grep"),
+        ("glob", "glob"),
+        ("web_search", "web_search"),
+        ("web_fetch", "web_fetch"),
+        ("subagent", "spawn_agent"),
+        ("lsp", "lsp"),
+    ] {
+        assert_eq!(
+            normalize_tool(vendor, &CallerKind::Dsh),
+            canonical,
+            "{vendor}"
+        );
+    }
+}
+
 // ClaudeCode extra mappings
 #[test]
 fn claude_ls() {

@@ -1,0 +1,6 @@
+{"type":"user","message":{"role":"user","content":"run the tests"},"sessionId":"sess_cc_stop"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Running the tests."}]},"sessionId":"sess_cc_stop"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_1","name":"Bash","input":{"command":"cargo test"}}]},"sessionId":"sess_cc_stop"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"ok"}]},"sessionId":"sess_cc_stop"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"thinking","thinking":"all green"},{"type":"text","text":"All tests pass."},{"type":"text","text":"Nothing else to do."}]},"sessionId":"sess_cc_stop"}
+{"type":"system","subtype":"stop_hook_summary","sessionId":"sess_cc_stop"}

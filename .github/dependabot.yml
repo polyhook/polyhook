@@ -1,0 +1,61 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /packages/sdk-ts
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: gomod
+    directory: /packages/sdk-go
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: uv
+    directory: /packages/sdk-python
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: nuget
+    directory: /packages/sdk-dotnet
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+    open-pull-requests-limit: 5

@@ -27,10 +27,24 @@ fn pi_startup() {
     assert_eq!(normalize_event("Startup", &CallerKind::Pi), "session:start");
 }
 #[test]
+fn cc_session_start() {
+    assert_eq!(
+        normalize_event("SessionStart", &CallerKind::ClaudeCode),
+        "session:start"
+    );
+}
+#[test]
+fn cc_session_end() {
+    assert_eq!(
+        normalize_event("SessionEnd", &CallerKind::ClaudeCode),
+        "session:stop"
+    );
+}
+#[test]
 fn cc_stop() {
     assert_eq!(
         normalize_event("Stop", &CallerKind::ClaudeCode),
-        "session:stop"
+        "turn:stop"
     );
 }
 #[test]
@@ -218,7 +232,7 @@ fn gc_session_end() {
 fn gc_after_agent() {
     assert_eq!(
         normalize_event("AfterAgent", &CallerKind::GeminiCli),
-        "agent:stop"
+        "turn:stop"
     );
 }
 #[test]
@@ -229,10 +243,10 @@ fn gc_notification() {
     );
 }
 #[test]
-fn gc_before_agent_falls_through() {
+fn gc_before_agent() {
     assert_eq!(
         normalize_event("BeforeAgent", &CallerKind::GeminiCli),
-        "BeforeAgent"
+        "prompt:submit"
     );
 }
 #[test]
@@ -287,7 +301,7 @@ fn hermes_after_tool() {
 fn hermes_pre_llm_call() {
     assert_eq!(
         normalize_event("pre_llm_call", &CallerKind::Hermes),
-        "notification"
+        "prompt:submit"
     );
 }
 #[test]
@@ -319,6 +333,34 @@ fn hermes_subagent_stop() {
     );
 }
 #[test]
+fn hermes_post_llm_call() {
+    assert_eq!(
+        normalize_event("post_llm_call", &CallerKind::Hermes),
+        "turn:stop"
+    );
+}
+#[test]
 fn hermes_unknown_falls_through() {
     assert_eq!(normalize_event("bogus", &CallerKind::Hermes), "bogus");
+}
+#[test]
+fn cc_user_prompt_submit() {
+    assert_eq!(
+        normalize_event("UserPromptSubmit", &CallerKind::ClaudeCode),
+        "prompt:submit"
+    );
+}
+#[test]
+fn codex_user_prompt_submit() {
+    assert_eq!(
+        normalize_event("UserPromptSubmit", &CallerKind::Codex),
+        "prompt:submit"
+    );
+}
+#[test]
+fn cline_user_prompt_submit() {
+    assert_eq!(
+        normalize_event("UserPromptSubmit", &CallerKind::Cline),
+        "prompt:submit"
+    );
 }

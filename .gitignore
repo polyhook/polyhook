@@ -35,6 +35,7 @@ schema.rs
 
 # Test coverage artifacts
 packages/sdk-go/coverage.out
+packages/sdk-go/coverage.sdk.out
 
 
 .DS_Store

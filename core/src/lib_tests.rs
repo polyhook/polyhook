@@ -1,5 +1,11 @@
 use super::*;
+use crate::test_env::with_clean_env;
 use std::io::Cursor;
+
+// Read with the agent env vars cleared, under temp_env's lock.
+fn read_from(r: &mut impl Read) -> Result<HookEvent, String> {
+    with_clean_env(|| super::read_from(r))
+}
 
 const CLAUDE_PRE_TOOL: &str = r#"{"type":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls -la"},"session_id":"sess_test_001"}"#;
 const CURSOR_BEFORE_TOOL: &str = r#"{"hook_event_name":"beforeShellExecution","command":"echo hi","conversation_id":"sess_test_002"}"#;
@@ -129,6 +135,9 @@ fn respond_delegates_to_stdout() {
 #[cfg(unix)]
 #[test]
 fn read_delegates_to_stdin() {
+    // Newer rustc flags redeclaring libc symbols that std also uses; the
+    // signatures match libc, so the declaration is sound.
+    #[allow(unknown_lints, suspicious_runtime_symbol_definitions)]
     extern "C" {
         fn pipe(fds: *mut i32) -> i32;
         fn dup(fd: i32) -> i32;

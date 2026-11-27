@@ -112,17 +112,7 @@ polyhook::respond(&HookResponse::approve())?;
 
 ### What fields does `HookEvent` have?
 
-```typescript
-interface HookEvent {
-  event:     "tool:before" | "tool:after" | "session:start" | "session:stop" | "agent:stop" | "notification";
-  tool?:     string;                        // normalized tool name, e.g. "bash", "write_file"
-  input?:    Record<string, unknown>;       // tool input arguments (tool:before only)
-  output?:   Record<string, unknown>;       // tool output (tool:after only)
-  sessionId: string;
-  agentId?:  string;                        // present only inside sub-agent context
-  caller:    "claude-code" | "cursor" | "windsurf" | "cline" | "amp" | "gemini-cli" | "hermes" | "pi" | "unknown";
-}
-```
+See [HookEvent in the README](README.md#hookevent). `core/schema.json` is the source of truth.
 
 `tool` is only present for `tool:before` and `tool:after` events. `input` is only present for `tool:before`. `output` is only present for `tool:after`.
 

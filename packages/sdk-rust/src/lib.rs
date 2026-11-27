@@ -9,9 +9,9 @@ pub use polyhook_core::*;
 mod tests {
     use polyhook_core::detect::detect_caller;
     use polyhook_core::events::normalize_event;
-    use polyhook_core::parse::parse_event;
     use polyhook_core::response::serialize_response;
     use polyhook_core::tools::normalize_tool;
+    use polyhook_core::types::HookEvent;
     use polyhook_core::types::{CallerKind, HookResponse};
 
     const CLAUDE_PRE_TOOL_USE: &str = r#"{"type":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls -la"},"session_id":"sess_123"}"#;
@@ -27,11 +27,19 @@ mod tests {
         "WINDSURF_SESSION_ID",
         "CLINE_SESSION_ID",
         "AMP_SESSION_ID",
+        "GEMINI_PROJECT_DIR",
+        "CLAUDE_PROJECT_DIR",
     ];
 
-    fn with_clean_env<F: FnOnce()>(f: F) {
+    // temp_env runs every call under one global lock, so parsing inside it
+    // never races a test that sets one of these variables.
+    fn with_clean_env<R>(f: impl FnOnce() -> R) -> R {
         let vars: Vec<(&str, Option<&str>)> = AGENT_ENV_VARS.iter().map(|k| (*k, None)).collect();
-        temp_env::with_vars(vars, f);
+        temp_env::with_vars(vars, f)
+    }
+
+    fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
+        with_clean_env(|| polyhook_core::parse::parse_event(raw))
     }
 
     #[test]

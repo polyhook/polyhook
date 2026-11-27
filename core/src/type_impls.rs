@@ -1,4 +1,6 @@
-use crate::types::{ApproveResponse, BlockResponse, CallerKind, HookResponse, ModifyResponse};
+use crate::types::{
+    ApproveResponse, BlockResponse, CallerKind, ContextResponse, HookResponse, ModifyResponse,
+};
 
 #[allow(clippy::derivable_impls)] // CallerKind is generated; Unknown is not the first variant
 impl Default for CallerKind {
@@ -26,6 +28,14 @@ impl HookResponse {
         HookResponse::ModifyResponse(ModifyResponse {
             action: "modify".to_string(),
             input: input.as_object().cloned().unwrap_or_default(),
+        })
+    }
+
+    /// Add `context` to the model's context for this turn (prompt:submit events).
+    pub fn context(context: &str) -> Self {
+        HookResponse::ContextResponse(ContextResponse {
+            action: "context".to_string(),
+            context: context.to_owned(),
         })
     }
 }

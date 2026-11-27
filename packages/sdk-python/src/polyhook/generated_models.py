@@ -18,6 +18,8 @@ class CallerKind(Enum):
     gemini_cli = "gemini-cli"
     hermes = "hermes"
     pi = "pi"
+    codex = "codex"
+    dsh = "dsh"
     unknown = "unknown"
 
 
@@ -26,7 +28,9 @@ class Event(Enum):
     tool_after = "tool:after"
     session_start = "session:start"
     session_stop = "session:stop"
+    turn_stop = "turn:stop"
     agent_stop = "agent:stop"
+    prompt_submit = "prompt:submit"
     notification = "notification"
 
 
@@ -35,10 +39,19 @@ class HookEvent:
     event: Event
     sessionId: str
     caller: CallerKind
+    prompt: str | None = None
+    reply: str | None = None
+    transcriptPath: str | None = None
     tool: str | None = None
     input: dict[str, Any] | None = None
     output: dict[str, Any] | None = None
     agentId: str | None = None
+
+
+@dataclass
+class ContextResponse:
+    action: Literal["context"]
+    context: str
 
 
 @dataclass
@@ -58,4 +71,6 @@ class ModifyResponse:
     input: dict[str, Any]
 
 
-HookResponse: TypeAlias = ApproveResponse | BlockResponse | ModifyResponse
+HookResponse: TypeAlias = (
+    ApproveResponse | BlockResponse | ModifyResponse | ContextResponse
+)

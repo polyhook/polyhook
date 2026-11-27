@@ -1,6 +1,12 @@
-use super::parse_event;
+use crate::test_env::with_clean_env;
+use crate::types::HookEvent;
 use crate::CallerKind;
 use serde_json::json;
+
+// Parse with the agent env vars cleared, under temp_env's lock.
+fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
+    with_clean_env(|| super::parse_event(raw))
+}
 
 fn fixture(name: &str) -> Vec<u8> {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -357,4 +363,150 @@ fn infers_tool_before_for_unrecognized_event_name_with_tool() {
     }));
     assert_eq!(evt.event.to_string(), "tool:before");
     assert_eq!(evt.tool.as_deref(), Some("bash"));
+}
+
+// ---------------------------------------------------------------------------
+// prompt:submit — one payload per caller that has a prompt hook
+// ---------------------------------------------------------------------------
+
+fn parse_prompt(payload: serde_json::Value) -> crate::HookEvent {
+    let vars: Vec<(&str, Option<&str>)> = [
+        "POLYHOOK_CALLER",
+        "CLAUDE_CODE_VERSION",
+        "CURSOR_SESSION_ID",
+        "WINDSURF_SESSION_ID",
+        "CLINE_SESSION_ID",
+        "AMP_SESSION_ID",
+        "GEMINI_PROJECT_DIR",
+    ]
+    .iter()
+    .map(|k| (*k, None))
+    .collect();
+    temp_env::with_vars(vars, || {
+        parse_event(payload.to_string().as_bytes()).expect("parse failed")
+    })
+}
+
+#[test]
+fn claude_code_user_prompt_submit() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "UserPromptSubmit", "prompt": "fix the bug",
+        "session_id": "s1", "cwd": "/w", "transcript_path": "/t"
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn codex_user_prompt_submit() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "UserPromptSubmit", "prompt": "fix the bug", "session_id": "s1",
+        "turn_id": "t1", "model": "gpt-5", "cwd": "/w", "permission_mode": "default"
+    }));
+    assert_eq!(evt.caller, CallerKind::Codex);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn gemini_cli_before_agent() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "BeforeAgent", "prompt": "fix the bug", "session_id": "s1",
+        "cwd": "/w", "timestamp": "2026-01-01T00:00:00Z"
+    }));
+    assert_eq!(evt.caller, CallerKind::GeminiCli);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn hermes_pre_llm_call() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "pre_llm_call", "tool_name": null, "tool_input": null,
+        "session_id": "s1", "cwd": "/w",
+        "extra": {"user_message": "fix the bug", "is_first_turn": true}
+    }));
+    assert_eq!(evt.caller, CallerKind::Hermes);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn cline_user_prompt_submit() {
+    let evt = parse_prompt(json!({
+        "clineVersion": "3.40.0", "hookName": "UserPromptSubmit", "taskId": "task1",
+        "workspaceRoots": ["/w"], "userPromptSubmit": {"prompt": "fix the bug", "attachments": []}
+    }));
+    assert_eq!(evt.caller, CallerKind::Cline);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+    assert_eq!(evt.prompt.as_deref(), Some("fix the bug"));
+}
+
+#[test]
+fn prompt_is_none_for_tool_events() {
+    let evt = parse_prompt(json!({
+        "hook_event_name": "PreToolUse", "tool_name": "Bash",
+        "tool_input": {"command": "ls"}, "prompt": "stray", "session_id": "s1"
+    }));
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert!(evt.prompt.is_none());
+}
+
+#[test]
+fn claude_code_stop_hook_without_tool_fields() {
+    let evt = parse_value(json!({
+        "session_id": "sess_cc_123",
+        "transcript_path": "/tmp/t.jsonl",
+        "cwd": "/tmp",
+        "hook_event_name": "Stop",
+        "stop_hook_active": false
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "turn:stop");
+    assert!(evt.tool.is_none());
+    assert_eq!(evt.session_id, "sess_cc_123");
+}
+
+#[test]
+fn claude_code_subagent_stop_hook_without_tool_fields() {
+    let evt = parse_value(json!({
+        "session_id": "sess_cc_123",
+        "hook_event_name": "SubagentStop",
+        "stop_hook_active": false
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "agent:stop");
+}
+
+#[test]
+fn claude_code_user_prompt_submit_without_tool_fields() {
+    let evt = parse_value(json!({
+        "session_id": "sess_cc_123",
+        "hook_event_name": "UserPromptSubmit",
+        "prompt": "hi"
+    }));
+    assert_eq!(evt.caller, CallerKind::ClaudeCode);
+    assert_eq!(evt.event.to_string(), "prompt:submit");
+}
+
+#[test]
+fn dsh_pre_tool_via_claude_code_bridge() {
+    // dsh-hooks-claude-code payload: Claude Code shape with dsh's own tool names.
+    let raw = json!({
+        "session_id": "s1", "transcript_path": "", "cwd": "/w",
+        "hook_event_name": "PreToolUse", "tool_name": "subagent",
+        "tool_input": {"prompt": "x"}, "tool_use_id": "c1"
+    })
+    .to_string();
+    let evt = with_clean_env(|| {
+        temp_env::with_var("POLYHOOK_CALLER", Some("dsh"), || {
+            super::parse_event(raw.as_bytes())
+        })
+    })
+    .expect("parse failed");
+    assert_eq!(evt.caller, CallerKind::Dsh);
+    assert_eq!(evt.event.to_string(), "tool:before");
+    assert_eq!(evt.tool.as_deref(), Some("spawn_agent"));
+    assert_eq!(evt.input.expect("input")["prompt"], json!("x"));
 }

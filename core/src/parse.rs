@@ -1,7 +1,23 @@
+mod assistant_reply;
+mod event_kind_inference;
+mod json_string_field;
+mod session_and_agent_ids;
+mod tool_input_and_output;
+mod user_prompt;
+mod vendor_event_name;
+mod vendor_tool_name;
+
 use crate::detect::detect_caller;
 use crate::events::normalize_event;
 use crate::tools::normalize_tool;
-use crate::types::{CallerKind, HookEvent, HookEventEvent};
+use crate::types::{HookEvent, HookEventEvent};
+use assistant_reply::{extract_reply, extract_transcript_path};
+use event_kind_inference::infer_event;
+use session_and_agent_ids::{extract_agent_id, extract_session_id};
+use tool_input_and_output::{extract_input, extract_output};
+use user_prompt::extract_prompt;
+use vendor_event_name::extract_event_field;
+use vendor_tool_name::extract_tool_field;
 
 /// Parse raw stdin bytes into a normalized [`HookEvent`].
 pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
@@ -34,6 +50,19 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
             .unwrap_or_else(|_| infer_event(&tool, &output))
     };
 
+    let prompt = if event == HookEventEvent::PromptSubmit {
+        extract_prompt(&val, caller)
+    } else {
+        None
+    };
+
+    let transcript_path = extract_transcript_path(&val);
+    let reply = if event == HookEventEvent::TurnStop {
+        extract_reply(&val, caller, transcript_path.as_deref())
+    } else {
+        None
+    };
+
     // --- session / agent ids ---
     let session_id = extract_session_id(&val);
     let agent_id = extract_agent_id(&val);
@@ -46,183 +75,10 @@ pub fn parse_event(raw: &[u8]) -> Result<HookEvent, String> {
         session_id,
         agent_id,
         caller,
+        prompt,
+        reply,
+        transcript_path,
     })
-}
-
-/// Infer the normalized event kind from the payload shape when no usable
-/// vendor event name is available. A recognized tool with no output is a
-/// pending tool call; with output it has already run; otherwise there is
-/// nothing actionable, so treat it as a notification.
-fn infer_event(
-    tool: &Option<String>,
-    output: &Option<serde_json::Map<String, serde_json::Value>>,
-) -> HookEventEvent {
-    match (tool, output) {
-        (Some(_), Some(_)) => HookEventEvent::ToolAfter,
-        (Some(_), None) => HookEventEvent::ToolBefore,
-        _ => HookEventEvent::Notification,
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Field extraction helpers
-// ---------------------------------------------------------------------------
-
-fn str_field<'a>(val: &'a serde_json::Value, key: &str) -> Option<&'a str> {
-    val.get(key).and_then(|v| v.as_str())
-}
-
-fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -> String {
-    let candidates: &[&str] = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi => &[
-            "hook_event_name",
-            "event",
-            "hookEvent",
-            "hook_event",
-            "type",
-        ],
-        CallerKind::Cursor => &["hook_event_name"],
-        CallerKind::Windsurf => &["event", "type"],
-        CallerKind::Cline => &["type", "event"],
-        CallerKind::Amp => &["kind", "event", "type"],
-        CallerKind::GeminiCli => &["hook_event_name"],
-        CallerKind::Hermes => &["hook_event_name"],
-        CallerKind::Unknown => &["event", "type", "kind", "hookEvent"],
-    };
-
-    for key in candidates {
-        if let Some(s) = str_field(val, key) {
-            return s.to_owned();
-        }
-    }
-    String::new()
-}
-
-fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) -> Option<String> {
-    match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi => str_field(val, "tool_name").map(str::to_owned),
-        // Most Cursor hooks (preToolUse, postToolUse, beforeMCPExecution, ...)
-        // send tool_name like Claude Code. beforeShellExecution /
-        // afterShellExecution have no tool_name at all (just a bare `command`
-        // field), so synthesize the name Cursor itself uses for its terminal
-        // tool, which `normalize_tool` already maps to the canonical "bash".
-        CallerKind::Cursor => str_field(val, "tool_name").map(str::to_owned).or_else(|| {
-            matches!(
-                str_field(val, "hook_event_name"),
-                Some("beforeShellExecution") | Some("afterShellExecution")
-            )
-            .then(|| "run_terminal_cmd".to_owned())
-        }),
-        CallerKind::Windsurf => str_field(val, "tool").map(str::to_owned),
-        CallerKind::Cline => str_field(val, "toolName").map(str::to_owned),
-        CallerKind::Amp => str_field(val, "name").map(str::to_owned),
-        CallerKind::GeminiCli => str_field(val, "tool_name").map(str::to_owned),
-        CallerKind::Hermes => str_field(val, "tool_name").map(str::to_owned),
-        CallerKind::Unknown => {
-            for key in &["tool_name", "toolName", "tool", "name"] {
-                if let Some(s) = str_field(val, key) {
-                    return Some(s.to_owned());
-                }
-            }
-            None
-        }
-    }
-}
-
-fn into_map(v: serde_json::Value) -> Option<serde_json::Map<String, serde_json::Value>> {
-    match v {
-        serde_json::Value::Object(m) => Some(m),
-        _ => None,
-    }
-}
-
-fn extract_input(
-    val: &serde_json::Value,
-    caller: CallerKind,
-) -> Option<serde_json::Map<String, serde_json::Value>> {
-    let raw = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi => val.get("tool_input").cloned(),
-        CallerKind::Cursor => val.get("tool_input").cloned().or_else(|| {
-            val.get("command")
-                .map(|c| serde_json::json!({ "command": c }))
-        }),
-        CallerKind::Windsurf => val.get("parameters").cloned(),
-        CallerKind::Cline => val
-            .get("args")
-            .cloned()
-            .or_else(|| val.get("input").cloned()),
-        CallerKind::Amp => val
-            .get("args")
-            .cloned()
-            .or_else(|| val.get("input").cloned()),
-        CallerKind::GeminiCli => val.get("tool_input").cloned(),
-        CallerKind::Hermes => val.get("tool_input").cloned(),
-        CallerKind::Unknown => {
-            for key in &["tool_input", "args", "parameters", "input"] {
-                if let Some(v) = val.get(key) {
-                    return into_map(v.clone());
-                }
-            }
-            None
-        }
-    };
-    raw.and_then(into_map)
-}
-
-fn extract_output(
-    val: &serde_json::Value,
-    caller: CallerKind,
-) -> Option<serde_json::Map<String, serde_json::Value>> {
-    let raw = match caller {
-        CallerKind::ClaudeCode | CallerKind::Pi => val.get("tool_output").cloned(),
-        // afterShellExecution's `output` is a plain string (raw command
-        // output), not a structured object, so it does not survive
-        // `into_map` below; only postToolUse's `tool_output` object does.
-        CallerKind::Cursor => val.get("tool_output").cloned(),
-        CallerKind::Windsurf => val.get("result").cloned(),
-        CallerKind::Cline => val
-            .get("result")
-            .cloned()
-            .or_else(|| val.get("output").cloned()),
-        CallerKind::Amp => val
-            .get("result")
-            .cloned()
-            .or_else(|| val.get("output").cloned()),
-        CallerKind::GeminiCli => val.get("tool_response").cloned(),
-        CallerKind::Hermes => val
-            .get("tool_output")
-            .cloned()
-            .or_else(|| val.get("tool_response").cloned()),
-        CallerKind::Unknown => {
-            for key in &["tool_output", "result", "output"] {
-                if let Some(v) = val.get(key) {
-                    return into_map(v.clone());
-                }
-            }
-            None
-        }
-    };
-    raw.and_then(into_map)
-}
-
-fn extract_session_id(val: &serde_json::Value) -> String {
-    // Cursor has no `session_id` field; every hook payload carries
-    // `conversation_id` instead (https://cursor.com/docs/hooks).
-    for key in &["session_id", "sessionId", "session", "conversation_id"] {
-        if let Some(s) = str_field(val, key) {
-            return s.to_owned();
-        }
-    }
-    String::new()
-}
-
-fn extract_agent_id(val: &serde_json::Value) -> Option<String> {
-    for key in &["agent_id", "agentId", "agent"] {
-        if let Some(s) = str_field(val, key) {
-            return Some(s.to_owned());
-        }
-    }
-    None
 }
 
 // ---------------------------------------------------------------------------

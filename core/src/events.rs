@@ -12,7 +12,7 @@ pub fn normalize_event(vendor: &str, caller: &CallerKind) -> String {
         CallerKind::Amp => normalize_amp_event(vendor),
         CallerKind::GeminiCli => normalize_gemini_cli_event(vendor),
         CallerKind::Hermes => normalize_hermes_event(vendor),
-        CallerKind::Pi => normalize_claude_code_event(vendor),
+        CallerKind::Pi | CallerKind::Codex | CallerKind::Dsh => normalize_claude_code_event(vendor),
         CallerKind::Unknown => None,
     };
 
@@ -25,9 +25,12 @@ fn normalize_claude_code_event(vendor: &str) -> Option<&'static str> {
     match vendor {
         "PreToolUse" => Some("tool:before"),
         "PostToolUse" => Some("tool:after"),
-        "Startup" => Some("session:start"),
-        "Stop" => Some("session:stop"),
+        "Startup" | "SessionStart" => Some("session:start"),
+        "SessionEnd" => Some("session:stop"),
+        // Stop fires each time the agent finishes a reply, not at session end.
+        "Stop" => Some("turn:stop"),
         "SubagentStop" => Some("agent:stop"),
+        "UserPromptSubmit" => Some("prompt:submit"),
         "Notification" => Some("notification"),
         _ => None,
     }
@@ -63,6 +66,7 @@ fn normalize_cline_event(vendor: &str) -> Option<&'static str> {
         "afterToolUse" => Some("tool:after"),
         "onStart" => Some("session:start"),
         "onStop" => Some("session:stop"),
+        "UserPromptSubmit" => Some("prompt:submit"),
         _ => None,
     }
 }
@@ -84,7 +88,9 @@ fn normalize_gemini_cli_event(vendor: &str) -> Option<&'static str> {
         "AfterTool" => Some("tool:after"),
         "SessionStart" => Some("session:start"),
         "SessionEnd" => Some("session:stop"),
-        "AfterAgent" => Some("agent:stop"),
+        // AfterAgent fires once per turn, after the final response.
+        "AfterAgent" => Some("turn:stop"),
+        "BeforeAgent" => Some("prompt:submit"),
         "Notification" => Some("notification"),
         _ => None,
     }
@@ -97,10 +103,10 @@ fn normalize_hermes_event(vendor: &str) -> Option<&'static str> {
         "on_session_start" => Some("session:start"),
         "on_session_end" | "on_session_finalize" => Some("session:stop"),
         "subagent_stop" => Some("agent:stop"),
-        // Hermes pre_llm_call can inject extra prompt context. Polyhook's
-        // current normalized event schema has no prompt/context event, so keep
-        // it as a non-tool notification rather than dropping the invocation.
-        "pre_llm_call" => Some("notification"),
+        // post_llm_call fires once per successful turn, after the final response.
+        "post_llm_call" => Some("turn:stop"),
+        // pre_llm_call fires once per user turn and can inject context.
+        "pre_llm_call" => Some("prompt:submit"),
         _ => None,
     }
 }

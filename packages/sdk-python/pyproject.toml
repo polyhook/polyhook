@@ -13,8 +13,8 @@ requires-python = ">=3.10"
 dependencies = ["wasmtime>=20.0.0"]
 
 [project.urls]
-Homepage = "https://github.com/tupe12334/polyhook"
-Repository = "https://github.com/tupe12334/polyhook"
+Homepage = "https://github.com/polyhook/polyhook"
+Repository = "https://github.com/polyhook/polyhook"
 
 [tool.pytest.ini_options]
 testpaths = ["src/polyhook"]

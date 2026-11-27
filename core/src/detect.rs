@@ -19,6 +19,8 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             "gemini-cli" | "geminicli" => return CallerKind::GeminiCli,
             "hermes" | "hermes-agent" | "hermesagent" => return CallerKind::Hermes,
             "pi" => return CallerKind::Pi,
+            "codex" => return CallerKind::Codex,
+            "dsh" | "deepseek-harness" => return CallerKind::Dsh,
             _ => {}
         }
     }
@@ -59,12 +61,23 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             | "BeforeModel"
             | "AfterModel"
             | "BeforeToolSelection"
-            | "PreCompress"
-            | "SessionStart"
-            | "SessionEnd" => return CallerKind::GeminiCli,
+            | "PreCompress" => return CallerKind::GeminiCli,
+            // Shared with Claude Code. Claude Code sets CLAUDE_PROJECT_DIR for
+            // every hook (https://code.claude.com/docs/en/hooks); Gemini CLI
+            // sets it too, as an alias, but also sets GEMINI_PROJECT_DIR,
+            // which step 2 already matched. Codex payloads carry `turn_id`.
+            "SessionStart" | "SessionEnd" => {
+                if std::env::var("CLAUDE_PROJECT_DIR").is_err() {
+                    return CallerKind::GeminiCli;
+                }
+                if !has("turn_id") {
+                    return CallerKind::ClaudeCode;
+                }
+            }
             "pre_tool_call"
             | "post_tool_call"
             | "pre_llm_call"
+            | "post_llm_call"
             | "on_session_start"
             | "on_session_end"
             | "on_session_finalize"
@@ -98,6 +111,34 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
                 return CallerKind::Cursor;
             }
             _ => {}
+        }
+
+        // Cline's file hooks name the event in `hookName` and tag every
+        // payload with `clineVersion`.
+        if has("hookName") && has("clineVersion") {
+            return CallerKind::Cline;
+        }
+
+        // Codex speaks Claude Code's hook format but adds a per-turn
+        // `turn_id` to every payload, which Claude Code never sends.
+        if has("hook_event_name") && has("turn_id") {
+            return CallerKind::Codex;
+        }
+
+        // Claude Code-only names, checked after Codex (which reuses them).
+        // Lifecycle events (Stop, SubagentStop, …) carry no tool_name/tool_input,
+        // and prompt events carry the prompt, so the shape check below misses them.
+        if matches!(
+            str_val("hook_event_name"),
+            "PreToolUse"
+                | "PostToolUse"
+                | "Stop"
+                | "SubagentStop"
+                | "UserPromptSubmit"
+                | "PreCompact"
+                | "PermissionRequest"
+        ) {
+            return CallerKind::ClaudeCode;
         }
 
         if has("tool_name") && has("tool_input") {

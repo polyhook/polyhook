@@ -55,6 +55,10 @@ public enum EventKind
     [JsonStringEnumMemberName("session:stop")]
     SessionStop,
 
+    /// <summary>Agent finished its reply for the turn.</summary>
+    [JsonStringEnumMemberName("turn:stop")]
+    TurnStop,
+
     /// <summary>Sub-agent returned.</summary>
     [JsonStringEnumMemberName("agent:stop")]
     AgentStop,
@@ -72,10 +76,23 @@ public sealed record HookEvent
 {
     /// <summary>
     /// Normalized event kind. One of: 'tool:before', 'tool:after',
-    /// 'session:start', 'session:stop', 'agent:stop', 'notification'.
+    /// 'session:start', 'session:stop', 'turn:stop', 'agent:stop', 'notification'.
     /// </summary>
     [JsonPropertyName("event")]
     public required EventKind Event { get; init; }
+
+    /// <summary>
+    /// The agent's final reply text for the turn. Present for turn:stop events
+    /// when the caller sends it; null for all other event kinds.
+    /// </summary>
+    [JsonPropertyName("reply")]
+    public string? Reply { get; init; }
+
+    /// <summary>
+    /// Path to the session transcript file, when the caller sends one; null otherwise.
+    /// </summary>
+    [JsonPropertyName("transcriptPath")]
+    public string? TranscriptPath { get; init; }
 
     /// <summary>
     /// Normalized tool name (e.g. 'bash', 'write_file', 'read_file').

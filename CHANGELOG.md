@@ -7,8 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-24
+
 ### Changed
 
+- **Breaking:** Claude Code (and Codex, Pi) `Stop` now normalizes to the new
+  `turn:stop` event instead of `session:stop`. `Stop` fires each time the
+  agent finishes a reply; only `SessionEnd` maps to `session:stop` now.
+  Gemini CLI `AfterAgent` (once per turn) moves from `agent:stop` to
+  `turn:stop`. Hooks that listened on `session:stop` or `agent:stop` for
+  per-turn stops must listen on `turn:stop` ([#82]).
+
+### Added
+
+- `turn:stop` event with a `reply` field: the agent's final reply text.
+  Filled from Claude Code/Codex/Pi `last_assistant_message`, Gemini CLI
+  `prompt_response` and Hermes `assistant_response`. When a Claude
+  Code-format payload has no `last_assistant_message`, the native Rust SDK
+  reads the last assistant text from the transcript; WASM SDKs cannot read
+  files and leave `reply` null.
+- Hermes `post_llm_call` maps to `turn:stop`.
+- `transcriptPath` field: the caller's `transcript_path`, on every event that
+  carries it ([#82]).
+
+### Fixed
+
+- Claude Code lifecycle hooks (`Stop`, `SubagentStop`, `UserPromptSubmit`,
+  `PreCompact`, `PermissionRequest`) are now detected as `claude-code`
+  instead of `unknown`, and `SessionStart`/`SessionEnd` normalize to
+  `session:start`/`session:stop`. Claude Code `SessionStart`/`SessionEnd`
+  hooks are told apart from Gemini CLI by `CLAUDE_PROJECT_DIR` (Gemini CLI
+  sets it too, but also sets `GEMINI_PROJECT_DIR`), so approving them no
+  longer emits Gemini's `{"decision":"allow"}`, which Claude Code rejects.
+  Codex payloads (`turn_id`) still win over the shared event names ([#63]).
+
+### Security
+
+- Removed the unmaintained `wee_alloc` crate (GitHub security advisory
+  "wee_alloc is Unmaintained"). The WASM build now uses the Rust standard allocator. `polyhook.wasm` grows
+  by about 5 KB.
+
+## [0.2.0] - 2026-09-26
+
+### Added
+
+- `prompt:submit` event with a `prompt` field, and a `ContextResponse`
+  (`{ action: "context", context }`) that adds text to the model's context
+  for the turn. Supported on Claude Code, Pi, Gemini CLI (`BeforeAgent`),
+  Hermes (`pre_llm_call`) and Cline (`UserPromptSubmit`); Cursor, Windsurf and
+  Amp receive it as approve ([#73]).
+- Codex caller, detected by its per-turn `turn_id` or `POLYHOOK_CALLER=codex`,
+  using Claude Code-compatible payloads and responses ([#74]).
+
+### Changed
+
+- **Breaking:** Hermes `pre_llm_call` now normalizes to `prompt:submit`
+  instead of `notification` ([#73]).
+- **Breaking (Rust):** `CallerKind`, `HookEventEvent` and `HookResponse` gained
+  variants, so exhaustive `match`es need new arms ([#73], [#74]).
+- Split `core/src/parse.rs` helpers into `core/src/parse/` submodules; no
+  behavior change ([#75]).
 - Refreshed the embedded `polyhook.wasm` artifact bundled with the Go SDK.
 
 ## [0.1.11] - 2026-06-19
@@ -113,7 +171,8 @@ v0.1.2.
   backoff for crates.io indexing races, embedded and refreshed `polyhook.wasm`
   for the Go SDK, and assorted module-path and metadata corrections.
 
-[Unreleased]: https://github.com/polyhook/polyhook/compare/v0.1.11...HEAD
+[Unreleased]: https://github.com/polyhook/polyhook/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/polyhook/polyhook/compare/v0.2.0...v0.2.1
 [0.1.11]: https://github.com/polyhook/polyhook/compare/v0.1.10...v0.1.11
 [0.1.10]: https://github.com/polyhook/polyhook/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/polyhook/polyhook/compare/v0.1.8...v0.1.9
@@ -134,3 +193,8 @@ v0.1.2.
 [#36]: https://github.com/polyhook/polyhook/pull/36
 [#37]: https://github.com/polyhook/polyhook/pull/37
 [#38]: https://github.com/polyhook/polyhook/pull/38
+[#63]: https://github.com/polyhook/polyhook/issues/63
+[#73]: https://github.com/polyhook/polyhook/pull/73
+[#74]: https://github.com/polyhook/polyhook/pull/74
+[#75]: https://github.com/polyhook/polyhook/pull/75
+[#82]: https://github.com/polyhook/polyhook/pull/82
