@@ -3,7 +3,9 @@
 use super::json_string_field::str_field;
 
 pub(super) fn extract_session_id(val: &serde_json::Value) -> String {
-    for key in &["session_id", "sessionId", "session"] {
+    // Cursor has no `session_id` field; every hook payload carries
+    // `conversation_id` instead (https://cursor.com/docs/hooks).
+    for key in &["session_id", "sessionId", "session", "conversation_id"] {
         if let Some(s) = str_field(val, key) {
             return s.to_owned();
         }

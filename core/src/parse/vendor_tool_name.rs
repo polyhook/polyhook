@@ -8,11 +8,18 @@ pub(super) fn extract_tool_field(val: &serde_json::Value, caller: CallerKind) ->
         CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Dsh => {
             str_field(val, "tool_name").map(str::to_owned)
         }
-        CallerKind::Cursor => val
-            .get("toolCall")
-            .and_then(|tc| tc.get("name"))
-            .and_then(|n| n.as_str())
-            .map(str::to_owned),
+        // Most Cursor hooks (preToolUse, postToolUse, beforeMCPExecution, ...)
+        // send tool_name like Claude Code. beforeShellExecution /
+        // afterShellExecution have no tool_name at all (just a bare `command`
+        // field), so synthesize the name Cursor itself uses for its terminal
+        // tool, which `normalize_tool` already maps to the canonical "bash".
+        CallerKind::Cursor => str_field(val, "tool_name").map(str::to_owned).or_else(|| {
+            matches!(
+                str_field(val, "hook_event_name"),
+                Some("beforeShellExecution") | Some("afterShellExecution")
+            )
+            .then(|| "run_terminal_cmd".to_owned())
+        }),
         CallerKind::Windsurf => str_field(val, "tool").map(str::to_owned),
         CallerKind::Cline => str_field(val, "toolName").map(str::to_owned),
         CallerKind::Amp => str_field(val, "name").map(str::to_owned),

@@ -1,1 +1,1 @@
-{"type":"AfterToolCall","toolCall":{"name":"read_file","args":{"path":"/tmp/foo.txt"},"result":{"content":"hello"}},"sessionId":"sess_cur_456"}
+{"conversation_id":"sess_cur_456","generation_id":"gen_1","hook_event_name":"postToolUse","tool_name":"read_file","tool_input":{"path":"/tmp/foo.txt"},"tool_output":{"content":"hello"},"tool_use_id":"tu_1","cwd":"/tmp"}

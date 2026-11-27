@@ -12,7 +12,7 @@ pub(super) fn extract_event_field(val: &serde_json::Value, caller: CallerKind) -
             "hook_event",
             "type",
         ],
-        CallerKind::Cursor => &["type", "event"],
+        CallerKind::Cursor => &["hook_event_name"],
         CallerKind::Windsurf => &["event", "type"],
         CallerKind::Cline => &["hookName", "type", "event"],
         CallerKind::Amp => &["kind", "event", "type"],

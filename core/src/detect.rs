@@ -50,9 +50,9 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
         let has = |key: &str| obj.contains_key(key);
         let str_val = |key: &str| obj.get(key).and_then(|v| v.as_str()).unwrap_or("");
 
-        // Gemini CLI / Hermes: hook_event_name with caller-specific values.
-        // Checked before the Claude Code heuristic because all three send
-        // tool_name + tool_input for tool events.
+        // Gemini CLI / Hermes / Cursor: hook_event_name with caller-specific
+        // values. Checked before the Claude Code heuristic because all of
+        // them send tool_name + tool_input for tool events.
         match str_val("hook_event_name") {
             "BeforeTool"
             | "AfterTool"
@@ -83,6 +83,32 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
             | "on_session_finalize"
             | "subagent_stop" => {
                 return CallerKind::Hermes;
+            }
+            // Cursor's real hook contract (https://cursor.com/docs/hooks).
+            // The previous heuristic below (`type` + `toolCall`) matched no
+            // payload Cursor actually sends.
+            "sessionStart"
+            | "sessionEnd"
+            | "preToolUse"
+            | "postToolUse"
+            | "postToolUseFailure"
+            | "subagentStart"
+            | "subagentStop"
+            | "beforeShellExecution"
+            | "afterShellExecution"
+            | "beforeMCPExecution"
+            | "afterMCPExecution"
+            | "beforeReadFile"
+            | "afterFileEdit"
+            | "beforeSubmitPrompt"
+            | "preCompact"
+            | "stop"
+            | "afterAgentResponse"
+            | "afterAgentThought"
+            | "beforeTabFileRead"
+            | "afterTabFileEdit"
+            | "workspaceOpen" => {
+                return CallerKind::Cursor;
             }
             _ => {}
         }
@@ -117,9 +143,6 @@ pub fn detect_caller(stdin: &serde_json::Value) -> CallerKind {
 
         if has("tool_name") && has("tool_input") {
             return CallerKind::ClaudeCode;
-        }
-        if has("type") && has("toolCall") {
-            return CallerKind::Cursor;
         }
         if has("event") && has("parameters") {
             return CallerKind::Windsurf;

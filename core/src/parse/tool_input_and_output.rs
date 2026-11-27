@@ -17,7 +17,10 @@ pub(super) fn extract_input(
         CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Dsh => {
             val.get("tool_input").cloned()
         }
-        CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("args")).cloned(),
+        CallerKind::Cursor => val.get("tool_input").cloned().or_else(|| {
+            val.get("command")
+                .map(|c| serde_json::json!({ "command": c }))
+        }),
         CallerKind::Windsurf => val.get("parameters").cloned(),
         CallerKind::Cline => val
             .get("args")
@@ -49,7 +52,10 @@ pub(super) fn extract_output(
         CallerKind::ClaudeCode | CallerKind::Pi | CallerKind::Codex | CallerKind::Dsh => {
             val.get("tool_output").cloned()
         }
-        CallerKind::Cursor => val.get("toolCall").and_then(|tc| tc.get("result")).cloned(),
+        // afterShellExecution's `output` is a plain string (raw command
+        // output), not a structured object, so it does not survive
+        // `into_map` below; only postToolUse's `tool_output` object does.
+        CallerKind::Cursor => val.get("tool_output").cloned(),
         CallerKind::Windsurf => val.get("result").cloned(),
         CallerKind::Cline => val
             .get("result")
