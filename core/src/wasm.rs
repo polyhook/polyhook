@@ -93,16 +93,10 @@ pub unsafe extern "C" fn parse(ptr: *const u8, len: usize) -> *mut u8 {
             });
             match serde_json::to_vec(&event) {
                 Ok(bytes) => bytes,
-                Err(e) => {
-                    let msg = format!("{{\"error\":\"serialize failed: {e}\"}}");
-                    msg.into_bytes()
-                }
+                Err(e) => error_payload(format_args!("serialize failed: {e}")),
             }
         }
-        Err(e) => {
-            let msg = format!("{{\"error\":\"{e}\"}}");
-            msg.into_bytes()
-        }
+        Err(e) => error_payload(&e),
     };
 
     length_prefix_alloc(result)
@@ -150,10 +144,10 @@ pub unsafe extern "C" fn serialize(ptr: *const u8, len: usize) -> *mut u8 {
             let value = serialize_response_with_event(&resp, caller, event);
             match serde_json::to_vec(&value) {
                 Ok(bytes) => bytes,
-                Err(e) => format!("{{\"error\":\"serialize failed: {e}\"}}").into_bytes(),
+                Err(e) => error_payload(format_args!("serialize failed: {e}")),
             }
         }
-        Err(e) => format!("{{\"error\":\"response parse failed: {e}\"}}").into_bytes(),
+        Err(e) => error_payload(format!("response parse failed: {e}")),
     };
 
     length_prefix_alloc(result)
@@ -162,6 +156,13 @@ pub unsafe extern "C" fn serialize(ptr: *const u8, len: usize) -> *mut u8 {
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+/// Build a `{"error": "<msg>"}` payload with proper JSON escaping.
+fn error_payload(msg: impl std::fmt::Display) -> Vec<u8> {
+    serde_json::json!({ "error": msg.to_string() })
+        .to_string()
+        .into_bytes()
+}
 
 /// Prepend a 4-byte little-endian length to `payload`, allocate, and return
 /// a raw pointer to the combined buffer.  The caller owns the memory and must

@@ -317,3 +317,15 @@ fn length_prefix_alloc_encodes_correct_length() {
         dealloc(ptr, 4 + payload_len);
     }
 }
+
+// ---------------------------------------------------------------------------
+// error_payload
+// ---------------------------------------------------------------------------
+
+#[test]
+fn error_payload_escapes_quotes_and_backslashes() {
+    let msg = "bad \"x\" \\ y\nz";
+    let bytes = error_payload(msg);
+    let v: serde_json::Value = serde_json::from_slice(&bytes).expect("valid JSON");
+    assert_eq!(v["error"], serde_json::json!(msg));
+}
